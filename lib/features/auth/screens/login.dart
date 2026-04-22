@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:finalproject/features/auth/screens/homescreen.dart';
+import 'package:finalproject/features/auth/screens/firstscreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email == correctEmail && password == correctPassword) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (context) => const FirstScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

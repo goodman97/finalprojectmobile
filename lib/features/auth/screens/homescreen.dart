@@ -8,21 +8,6 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
 
-      // 🔻 BOTTOM NAVBAR
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xFFE4572E),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.confirmation_num), label: "Tickets"),
-          BottomNavigationBarItem(icon: Icon(Icons.store), label: "Market"),
-          BottomNavigationBarItem(icon: Icon(Icons.sports_esports), label: "Game"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-        ],
-      ),
-
       body: SafeArea(
         child: Column(
           children: [
