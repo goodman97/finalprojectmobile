@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
 
-      home: LoginScreen(), // 🔥 tanpa const dulu
+      home: LoginScreen(),
     );
   }
 }

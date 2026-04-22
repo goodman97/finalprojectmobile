@@ -1,0 +1,272 @@
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F1E8),
+
+      // 🔻 BOTTOM NAVBAR
+      bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: const Color(0xFFE4572E),
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 0,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.confirmation_num), label: "Tickets"),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: "Market"),
+          BottomNavigationBarItem(icon: Icon(Icons.sports_esports), label: "Game"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+        ],
+      ),
+
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+
+            // 🔥 HEADER
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      "Discover",
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2F3E2F),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "Find your next experience",
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  ],
+                ),
+                Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_none),
+                      onPressed: () {},
+                    ),
+                    Positioned(
+                      right: 10,
+                      top: 10,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    )
+                  ],
+                )
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // 🔍 SEARCH BAR
+            TextField(
+              decoration: InputDecoration(
+                hintText: "Search events...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 🔘 CATEGORY
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  categoryChip("All", true),
+                  categoryChip("Music", false),
+                  categoryChip("Sports", false),
+                  categoryChip("Theater", false),
+                  categoryChip("Festival", false),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // CARD
+            eventCard(
+              title: "Summer Music Festival",
+              date: "Jun 15, 2026",
+              location: "Central Park",
+              category: "Music",
+              price: "\$50",
+              image: "assets/images/concert.jpg",
+            ),
+
+            const SizedBox(height: 16),
+
+            eventCard(
+              title: "Broadway Spectacular",
+              date: "Jun 25, 2026",
+              location: "Lincoln Center",
+              category: "Theater",
+              price: "\$45",
+              image: "assets/images/theater.jpg",
+            ),
+
+            const SizedBox(height: 16),
+
+            eventCard(
+              title: "Championship Finals",
+              date: "Jul 10, 2026",
+              location: "Metro Stadium",
+              category: "Sports",
+              price: "\$95",
+              image: "assets/images/stadium.jpg",
+            ),
+
+            const SizedBox(height: 16),
+
+            eventCard(
+              title: "Modern Art Showcase",
+              date: "Jun 30, 2026",
+              location: "Downtown Gallery",
+              category: "Art",
+              price: "\$35",
+              image: "assets/images/gallery.jpg",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🔘 CATEGORY CHIP
+  Widget categoryChip(String title, bool active) {
+    return Container(
+      margin: const EdgeInsets.only(right: 10),
+      child: Chip(
+        label: Text(title),
+        backgroundColor:
+            active ? const Color(0xFFE4572E) : Colors.white,
+        labelStyle: TextStyle(
+          color: active ? Colors.white : Colors.black,
+        ),
+      ),
+    );
+  }
+
+  // 🎟️ EVENT CARD
+  Widget eventCard({
+    required String title,
+    required String date,
+    required String location,
+    required String category,
+    required String image,
+    String? price,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 6),
+        ],
+      ),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+                child: Image.asset(
+                  image,
+                  height: 150,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+
+              // PRICE
+              if (price != null)
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE4572E),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      price,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+
+              // CATEGORY
+              Positioned(
+                left: 10,
+                bottom: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(category),
+                ),
+              ),
+            ],
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+
+                const SizedBox(height: 6),
+
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 14),
+                    const SizedBox(width: 4),
+                    Text(date),
+                    const SizedBox(width: 12),
+                    const Icon(Icons.location_on, size: 14),
+                    const SizedBox(width: 4),
+                    Text(location),
+                  ],
+                )
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}

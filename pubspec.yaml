@@ -21,3 +21,7 @@ flutter:
 
   assets:
     - assets/images/design_logo.png
+    - assets/images/concert.jpg
+    - assets/images/theater.jpg
+    - assets/images/gallery.jpg
+    - assets/images/stadium.jpg

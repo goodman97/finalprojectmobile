@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:finalproject/features/auth/screens/homescreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,6 +10,30 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool isObscure = true;
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  void login() {
+    String email = emailController.text;
+    String password = passwordController.text;
+
+    const correctEmail = "admin@gmail.com";
+    const correctPassword = "123";
+
+    if (email == correctEmail && password == correctPassword) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Email atau password salah!"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
 
                 TextField(
+                  controller: emailController,
                   decoration: InputDecoration(
                     hintText: "your@email.com",
                     prefixIcon: const Icon(Icons.email_outlined),
@@ -89,6 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
 
                 TextField(
+                  controller: passwordController,
                   obscureText: isObscure,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.lock_outline),
@@ -128,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: login,
                     child: const Text(
                       "Sign In",
                       style: TextStyle(fontSize: 16),
