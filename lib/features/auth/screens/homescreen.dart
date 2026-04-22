@@ -12,7 +12,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
 
-            // 🔥 HEADER + SEARCH + CATEGORY (TIDAK SCROLL)
+            // !SROLL / TETAP
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -99,7 +99,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-            // 🔥 YANG SCROLL
+            // SCROLL
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
