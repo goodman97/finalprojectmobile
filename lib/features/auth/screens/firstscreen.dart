@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/homescreen.dart';
 import 'package:finalproject/features/auth/screens/profile.dart';
+import 'package:finalproject/features/auth/screens/mytickets.dart';
+import 'package:finalproject/features/auth/screens/market.dart';
 
 class FirstScreen extends StatefulWidget {
   const FirstScreen({super.key});
@@ -14,8 +16,8 @@ class _ScreenState extends State<FirstScreen> {
 
   final List<Widget> pages = const [
     HomeScreen(),
-    Center(child: Text("Tickets")),
-    Center(child: Text("Market")),
+    MyTickets(),
+    Market(),
     Center(child: Text("Game")),
     Profile(),
   ];

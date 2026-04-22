@@ -1,3 +1,4 @@
+import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:flutter/material.dart';
 
 class Profile extends StatelessWidget {
@@ -162,7 +163,13 @@ class Profile extends StatelessWidget {
 
                   // LOGOUT
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (route) => false,
+                      );
+                    },
                     icon: const Icon(Icons.logout, color: Colors.red),
                     label: const Text(
                       "Log Out",
