@@ -3,22 +3,23 @@ import 'package:finalproject/features/auth/screens/homescreen.dart';
 import 'package:finalproject/features/auth/screens/profile.dart';
 import 'package:finalproject/features/auth/screens/mytickets.dart';
 import 'package:finalproject/features/auth/screens/market.dart';
+import 'package:finalproject/features/auth/screens/minigame.dart';
 
-class FirstScreen extends StatefulWidget {
-  const FirstScreen({super.key});
+class Navigation extends StatefulWidget {
+  const Navigation({super.key});
 
   @override
-  State<FirstScreen> createState() => _ScreenState();
+  State<Navigation> createState() => _ScreenState();
 }
 
-class _ScreenState extends State<FirstScreen> {
+class _ScreenState extends State<Navigation> {
   int currentIndex = 0;
 
   final List<Widget> pages = const [
     HomeScreen(),
     MyTickets(),
     Market(),
-    Center(child: Text("Game")),
+    MiniGame(),
     Profile(),
   ];
 

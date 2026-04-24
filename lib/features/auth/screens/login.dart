@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:finalproject/features/auth/screens/firstscreen.dart';
+import 'package:finalproject/features/auth/screens/navigation.dart';
+import 'package:finalproject/features/auth/screens/register.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,29 +13,55 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool isObscure = true;
+
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void login() {
+  // LOGIN FUNCTION
+  void login() async {
+    print("LOGIN DIKLIK");
+
     String email = emailController.text;
     String password = passwordController.text;
 
-    const correctEmail = "admin@gmail.com";
-    const correctPassword = "123";
-
-    if (email == correctEmail && password == correctPassword) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const FirstScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Email atau password salah!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (email.isEmpty || password.isEmpty) {
+      showMsg("Semua field wajib diisi");
+      return;
     }
+
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.100.238:5000/api/auth/login"),  // IP SESUAIKAN DENGAN IP LAPTOP
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email,
+          "password": password,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        // login sukses
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Navigation()),
+        );
+      } else {
+        showMsg(data["message"] ?? "Login gagal");
+      }
+    } catch (e) {
+      showMsg("Tidak bisa konek ke server");
+    }
+  }
+
+  void showMsg(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -47,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
 
-                // 🔥 LOGO
+                // LOGO
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -204,7 +233,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text("Don't have an account? "),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const Register(),
+                          ),
+                        );
+                      },
                       child: const Text(
                         "Sign up",
                         style: TextStyle(
