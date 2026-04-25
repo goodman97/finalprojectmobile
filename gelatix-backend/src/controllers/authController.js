@@ -3,16 +3,51 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  try {
+    const { name, email, password } = req.body;
 
-  const hashed = await bcrypt.hash(password, 10);
+    // 1. Validasi
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Semua field wajib diisi",
+      });
+    }
 
-  const result = await pool.query(
-    "INSERT INTO users (name, email, password) VALUES ($1,$2,$3) RETURNING *",
-    [name, email, hashed]
-  );
+    // 2. Cek email
+    const checkUser = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
 
-  res.json(result.rows[0]);
+    if (checkUser.rows.length > 0) {
+      return res.status(400).json({
+        message: "Email sudah terdaftar",
+      });
+    }
+
+    // 3. Hash password
+    const hashed = await bcrypt.hash(password, 10);
+
+    // 4. Insert (biarkan DB handle default field)
+    const result = await pool.query(
+      `INSERT INTO users (name, email, password)
+       VALUES ($1, $2, $3)
+       RETURNING id, name, email, role, created_at`,
+      [name, email, hashed]
+    );
+
+    res.status(201).json({
+      message: "Register berhasil",
+      user: result.rows[0],
+    });
+
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+
+    res.status(500).json({
+      message: "Server error",
+    });
+  }
 };
 
 exports.login = async (req, res) => {

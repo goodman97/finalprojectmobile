@@ -1,6 +1,6 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:finalproject/services/auth_service.dart';
+import 'package:finalproject/services/storage_service.dart';
 import 'package:finalproject/features/auth/screens/navigation.dart';
 import 'package:finalproject/features/auth/screens/register.dart';
 
@@ -19,8 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // LOGIN FUNCTION
   void login() async {
-    print("LOGIN DIKLIK");
-
     String email = emailController.text;
     String password = passwordController.text;
 
@@ -30,25 +28,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse("http://192.168.100.238:5000/api/auth/login"),  // IP SESUAIKAN DENGAN IP LAPTOP
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "email": email,
-          "password": password,
-        }),
-      );
+      final result = await AuthService.login(email, password);
 
-      final data = jsonDecode(response.body);
+      if (result['token'] != null) {
+        // simpan token
+        await StorageService.saveToken(result['token']);
 
-      if (response.statusCode == 200) {
-        // login sukses
+        // pindah ke halaman utama
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const Navigation()),
         );
       } else {
-        showMsg(data["message"] ?? "Login gagal");
+        showMsg(result['message'] ?? "Login gagal");
       }
     } catch (e) {
       showMsg("Tidak bisa konek ke server");
@@ -187,45 +179,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: login,
                     child: const Text(
                       "Sign In",
-                      style: TextStyle(fontSize: 16),
+                      style: TextStyle(
+                        color: Color.fromARGB(255, 255, 255, 255),
+                        fontSize: 16
+                        ),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
-
-                // OR DIVIDER
-                Row(
-                  children: const [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text("or"),
-                    ),
-                    Expanded(child: Divider()),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // BIOMETRIC BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.fingerprint),
-                    label: const Text("Use Biometric Login"),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF2F3E2F)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 30),
 
                 // SIGN UP
                 Row(

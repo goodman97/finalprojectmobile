@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/login.dart';
+import 'package:finalproject/services/auth_service.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -28,7 +29,10 @@ class _RegisterScreenState extends State<Register> {
     }
   }
 
-  void register() {
+  // REGISTER KE BACKEND
+  void register() async {
+    String name = nameController.text;
+    String email = emailController.text;
     String pass = passwordController.text;
     String confirm = confirmPasswordController.text;
 
@@ -42,15 +46,22 @@ class _RegisterScreenState extends State<Register> {
       return;
     }
 
-    // simulasi sukses
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Account berhasil dibuat")),
-    );
+    try {
+      final result = await AuthService.register(name, email, pass);
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+      if (result['message'] == "Register berhasil") {
+        showMsg("Register berhasil, silakan login");
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      } else {
+        showMsg(result['message'] ?? "Register gagal");
+      }
+    } catch (e) {
+      showMsg("Tidak bisa konek ke server");
+    }
   }
 
   void showMsg(String msg) {
@@ -69,7 +80,6 @@ class _RegisterScreenState extends State<Register> {
           child: Column(
             children: [
 
-              // 🔙 BACK
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
@@ -86,15 +96,16 @@ class _RegisterScreenState extends State<Register> {
 
               const SizedBox(height: 10),
 
-              // 🔥 LOGO
               Container(
-                width: 80,
-                height: 80,
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2F3E2F),
-                  borderRadius: BorderRadius.circular(25),
+                  color: const Color(0xFFE4572E),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.flutter_dash, color: Colors.white),
+                child: Image.asset(
+                  'assets/images/design_logo.png',
+                  width: 70,
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -113,7 +124,6 @@ class _RegisterScreenState extends State<Register> {
 
               const SizedBox(height: 20),
 
-              // 🔥 PROGRESS
               Row(
                 children: [
                   Expanded(
@@ -138,12 +148,10 @@ class _RegisterScreenState extends State<Register> {
 
               const SizedBox(height: 30),
 
-              // 🔥 STEP CONTENT
               Expanded(
                 child: step == 1 ? stepOne() : stepTwo(),
               ),
 
-              // 🔥 BUTTON
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -154,13 +162,17 @@ class _RegisterScreenState extends State<Register> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20)),
                   ),
-                  child: Text(step == 1 ? "Continue" : "Create Account"),
+                  child: Text(
+                    step == 1 ? "Continue" : "Create Account",
+                    style: TextStyle(
+                      color: const Color.fromARGB(255, 255, 255, 255), // ganti sesuai warna yang kamu mau
+                    ),
+                  ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // SIGN IN
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -184,7 +196,6 @@ class _RegisterScreenState extends State<Register> {
     );
   }
 
-  // 🔹 STEP 1
   Widget stepOne() {
     return Column(
       children: [
@@ -195,7 +206,6 @@ class _RegisterScreenState extends State<Register> {
     );
   }
 
-  // 🔹 STEP 2
   Widget stepTwo() {
     return Column(
       children: [
