@@ -1,6 +1,9 @@
 import 'package:finalproject/features/auth/screens/admin/admin_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/admin/admin_homescreen.dart';
+import 'package:finalproject/features/auth/screens/admin/admin_events.dart';
+import 'package:finalproject/features/auth/screens/admin/admin_users.dart';
+import 'package:finalproject/features/auth/screens/admin/admin_transaction.dart';
 
 class AdminNavigation extends StatefulWidget {
   const AdminNavigation({super.key});
@@ -14,9 +17,9 @@ class _AdminNavigationState extends State<AdminNavigation> {
 
   final screens = [
     const AdminHomescreen(),
-    const Center(child: Text("Events")),
-    const Center(child: Text("Users")),
-    const Center(child: Text("Transactions")),
+    AdminEventsScreen(),
+    const AdminUsersScreen(),
+    const AdminTransactionsScreen(),
     const AdminProfile()
   ];
 
