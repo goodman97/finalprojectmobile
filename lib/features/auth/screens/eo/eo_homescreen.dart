@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_homescreen.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_profile.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_navigation.dart';
 
 class EOHomeScreen extends StatelessWidget {
   const EOHomeScreen({super.key});
