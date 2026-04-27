@@ -8,7 +8,7 @@ router.post("/login", auth.login);
 
 router.get("/profile", authMiddleware, async (req, res) => {
   const user = await pool.query(
-    "SELECT id, name, email FROM users WHERE id = $1",
+    "SELECT id, name, email, role, created_at FROM users WHERE id = $1",
     [req.user.id]
   );
 

@@ -1,11 +1,55 @@
-import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:flutter/material.dart';
+import 'package:finalproject/features/auth/screens/login.dart';
+import 'package:finalproject/services/auth_service.dart';
 
-class Profile extends StatelessWidget {
+class Profile extends StatefulWidget {
   const Profile({super.key});
 
   @override
+  State<Profile> createState() => _ProfileState();
+}
+
+class _ProfileState extends State<Profile> {
+
+  String name = "";
+  String email = "";
+  String date_created = "";
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadProfile();
+  }
+
+  Future<void> loadProfile() async {
+    try {
+      final data = await AuthService.getProfile();
+
+      setState(() {
+        name = data["name"];
+        email = data["email"];
+        
+        DateTime parsedDate = DateTime.parse(data["created_at"]);
+        date_created = parsedDate.toIso8601String().substring(0, 10);
+        
+        isLoading = false;
+      });
+    } catch (e) {
+      print("ERROR PROFILE: $e");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+
+    // LOADING
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
 
@@ -13,7 +57,7 @@ class Profile extends StatelessWidget {
         child: Column(
           children: [
 
-            // HEADER PROFILE
+            // HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 40, 20, 80),
@@ -26,8 +70,6 @@ class Profile extends StatelessWidget {
                     Color(0xFF2F3E2F),
                     Color(0xFF4E5F4E),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
                 ),
               ),
               child: Column(
@@ -51,14 +93,14 @@ class Profile extends StatelessWidget {
                   Container(
                     width: 90,
                     height: 90,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        "A",
-                        style: TextStyle(
+                        name.isNotEmpty ? name[0].toUpperCase() : "",
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                         ),
@@ -68,9 +110,10 @@ class Profile extends StatelessWidget {
 
                   const SizedBox(height: 10),
 
-                  const Text(
-                    "Alex Johnson",
-                    style: TextStyle(
+                  // NAME
+                  Text(
+                    name,
+                    style: const TextStyle(
                       fontSize: 20,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -79,22 +122,23 @@ class Profile extends StatelessWidget {
 
                   const SizedBox(height: 4),
 
-                  const Text(
-                    "alex.johnson@email.com",
-                    style: TextStyle(color: Colors.white70),
+                  // EMAIL
+                  Text(
+                    email,
+                    style: const TextStyle(color: Colors.white70),
                   ),
 
                   const SizedBox(height: 4),
 
-                  const Text(
-                    "Member since March 2025",
-                    style: TextStyle(color: Colors.white60),
+                  Text(
+                    date_created,
+                    style: const TextStyle(color: Colors.white60),
                   ),
                 ],
               ),
             ),
 
-            // STATS CARD
+            // STATS
             Transform.translate(
               offset: const Offset(0, -40),
               child: Padding(
@@ -115,48 +159,28 @@ class Profile extends StatelessWidget {
               child: Column(
                 children: [
 
-                  // CONTACT INFO
                   sectionCard(
                     title: "Contact Information",
                     child: Column(
                       children: [
-                        infoTile(Icons.email, "Email", "alex.johnson@email.com"),
-                        infoTile(Icons.phone, "Phone", "+1 (555) 123-4567"),
-                        infoTile(Icons.location_on, "Location", "New York, NY"),
-
-                        const SizedBox(height: 10),
-
-                        OutlinedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.edit),
-                          label: const Text("Edit Information"),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 45),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                        )
+                        infoTile(Icons.email, "Email", email),
+                        infoTile(Icons.phone, "Phone", "-"),
+                        infoTile(Icons.location_on, "Location", "-"),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // ACCOUNT
                   menuSection("Account", [
                     menuItem(Icons.person, "Edit Profile"),
                     menuItem(Icons.notifications, "Notifications"),
-                    menuItem(Icons.shield, "Privacy & Security"),
-                    menuItem(Icons.credit_card, "Payment Methods"),
                   ]),
 
                   const SizedBox(height: 20),
 
-                  // SUPPORT
                   menuSection("Support", [
                     menuItem(Icons.help, "Help Center"),
-                    menuItem(Icons.mail, "Contact Us"),
                   ]),
 
                   const SizedBox(height: 20),
@@ -166,7 +190,7 @@ class Profile extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
                         (route) => false,
                       );
                     },
@@ -184,14 +208,7 @@ class Profile extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 10),
-
-                  const Text(
-                    "Gelatix v1.0.0",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
                 ],
               ),
             )
@@ -201,35 +218,27 @@ class Profile extends StatelessWidget {
     );
   }
 
-  // 🔹 STAT CARD
+  // COMPONENT
   Widget statCard(String value, String label) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
-        ],
       ),
       child: Column(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              color: Color(0xFFE4572E),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 5),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 22,
+                  color: Color(0xFFE4572E),
+                  fontWeight: FontWeight.bold)),
           Text(label),
         ],
       ),
     );
   }
 
-  // 🔹 SECTION CARD
   Widget sectionCard({required String title, required Widget child}) {
     return Container(
       width: double.infinity,
@@ -237,69 +246,42 @@ class Profile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
           child,
         ],
       ),
     );
   }
 
-  // 🔹 INFO TILE
   Widget infoTile(IconData icon, String title, String value) {
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey.shade200,
-        child: Icon(icon, color: Colors.black54),
-      ),
+      leading: Icon(icon),
       title: Text(title),
       subtitle: Text(value),
     );
   }
 
-  // 🔹 MENU SECTION
   Widget menuSection(String title, List<Widget> items) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(title, style: const TextStyle(color: Colors.black54)),
-            ),
-          ),
-          const Divider(height: 1),
-          ...items,
-        ],
-      ),
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(title),
+        ),
+        ...items
+      ],
     );
   }
 
-  // 🔹 MENU ITEM
   Widget menuItem(IconData icon, String title) {
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey.shade200,
-        child: Icon(icon, color: Colors.black54),
-      ),
+      leading: Icon(icon),
       title: Text(title),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {},
     );
   }
 }

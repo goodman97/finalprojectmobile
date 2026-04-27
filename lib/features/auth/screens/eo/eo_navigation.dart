@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_homescreen.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_profile.dart';
 
 class EONavigation extends StatefulWidget {
   const EONavigation({super.key});
@@ -15,7 +16,7 @@ class _EONavigationState extends State<EONavigation> {
     const EOHomeScreen(),
     const Center(child: Text("My Events")),
     const Center(child: Text("Tickets")),
-    const Center(child: Text("Profile")),
+    const EOProfile(),
   ];
 
   @override

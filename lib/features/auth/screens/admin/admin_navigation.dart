@@ -1,3 +1,4 @@
+import 'package:finalproject/features/auth/screens/admin/admin_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/admin/admin_homescreen.dart';
 
@@ -16,7 +17,7 @@ class _AdminNavigationState extends State<AdminNavigation> {
     const Center(child: Text("Events")),
     const Center(child: Text("Users")),
     const Center(child: Text("Transactions")),
-    const Center(child: Text("Profile")),
+    const AdminProfile()
   ];
 
   @override
