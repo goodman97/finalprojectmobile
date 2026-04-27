@@ -303,7 +303,12 @@ class Market extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {},
-                      child: const Text("View"),
+                      child: const Text(
+                        "View",
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 255, 255, 255)
+                        ),
+                        ),
                     )
                   ],
                 )

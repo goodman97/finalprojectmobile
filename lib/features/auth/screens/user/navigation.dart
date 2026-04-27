@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:finalproject/features/auth/screens/homescreen.dart';
-import 'package:finalproject/features/auth/screens/profile.dart';
-import 'package:finalproject/features/auth/screens/mytickets.dart';
-import 'package:finalproject/features/auth/screens/market.dart';
-import 'package:finalproject/features/auth/screens/minigame.dart';
+import 'package:finalproject/features/auth/screens/user/homescreen.dart';
+import 'package:finalproject/features/auth/screens/user/profile.dart';
+import 'package:finalproject/features/auth/screens/user/mytickets.dart';
+import 'package:finalproject/features/auth/screens/user/market.dart';
+import 'package:finalproject/features/auth/screens/user/minigame.dart';
 
 class Navigation extends StatefulWidget {
   const Navigation({super.key});

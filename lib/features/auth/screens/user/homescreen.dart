@@ -154,7 +154,11 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           onPressed: () {},
-                          child: const Text("Get Tickets"),
+                          child: const Text(
+                            "Get Tickets",
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 255, 255, 255),
+                            ),),
                         )
                       ],
                     ),

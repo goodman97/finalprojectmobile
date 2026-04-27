@@ -190,7 +190,9 @@ class _GameScreenState extends State<MiniGame>
                     isSpinning
                         ? "Spinning..."
                         : "Spin the Wheel ($dailySpins left)",
-                    style: const TextStyle(fontSize: 16),
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 255, 255, 255),
+                      fontSize: 16),
                   ),
                 ),
               ),

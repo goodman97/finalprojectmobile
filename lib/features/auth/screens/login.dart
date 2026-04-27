@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/services/auth_service.dart';
 import 'package:finalproject/services/storage_service.dart';
-import 'package:finalproject/features/auth/screens/navigation.dart';
+import 'package:finalproject/features/auth/screens/user/navigation.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_navigation.dart';
+import 'package:finalproject/features/auth/screens/admin/admin_navigation.dart';
 import 'package:finalproject/features/auth/screens/register.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -34,11 +36,33 @@ class _LoginScreenState extends State<LoginScreen> {
         // simpan token
         await StorageService.saveToken(result['token']);
 
-        // pindah ke halaman utama
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const Navigation()),
-        );
+        // ambil role dari backend
+        final role = result['user']['role'];
+
+        // REDIRECT BERDASARKAN ROLE
+        if (role == 'organizer') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const EONavigation(),
+            ),
+          );
+        } 
+        else if (role == 'admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AdminNavigation(),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const Navigation(),
+            ),
+          );
+        }
       } else {
         showMsg(result['message'] ?? "Login gagal");
       }
@@ -83,7 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // TITLE
                 const Text(
                   "Welcome to Gelatix",
                   style: TextStyle(
@@ -105,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 40),
 
-                // EMAIL
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text("Email"),
@@ -128,7 +150,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // PASSWORD
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text("Password"),
@@ -163,7 +184,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 30),
 
-                // SIGN IN BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -180,16 +200,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text(
                       "Sign In",
                       style: TextStyle(
-                        color: Color.fromARGB(255, 255, 255, 255),
-                        fontSize: 16
-                        ),
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
-                // SIGN UP
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

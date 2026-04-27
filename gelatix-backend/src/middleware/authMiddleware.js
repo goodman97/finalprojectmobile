@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const pool = require("../config/db");
 
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -8,11 +9,20 @@ module.exports = (req, res, next) => {
       return res.status(401).json({ message: "Token tidak ada" });
     }
 
-    const token = authHeader.split(" ")[1]; // Bearer TOKEN
+    const token = authHeader.split(" ")[1];
 
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = verified; // { id: ... }
+    const user = await pool.query(
+      "SELECT id, role FROM users WHERE id = $1",
+      [decoded.id]
+    );
+
+    if (user.rows.length === 0) {
+      return res.status(401).json({ message: "User tidak ditemukan" });
+    }
+
+    req.user = user.rows[0];
 
     next();
   } catch (err) {
