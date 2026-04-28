@@ -1,18 +1,25 @@
-const pool = require("../config/db");
 const router = require("express").Router();
 const auth = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
+// AUTH
 router.post("/register", auth.register);
 router.post("/login", auth.login);
 
-router.get("/profile", authMiddleware, async (req, res) => {
-  const user = await pool.query(
-    "SELECT id, name, email, role, created_at FROM users WHERE id = $1",
-    [req.user.id]
-  );
+// PROFILE
+router.get("/profile", authMiddleware, auth.getProfile);
+router.put("/profile", authMiddleware, auth.updateProfile);
 
-  res.json(user.rows[0]);
-});
+// PASSWORD
+router.put("/change-password", authMiddleware, auth.changePassword);
+
+// UPLOAD
+router.post(
+  "/upload-photo",
+  authMiddleware,
+  upload.single("photo"),
+  auth.uploadPhoto
+);
 
 module.exports = router;

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/services/auth_service.dart';
 import 'package:finalproject/services/storage_service.dart';
+import 'package:finalproject/services/biometric_service.dart';
 import 'package:finalproject/features/auth/screens/user/navigation.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_navigation.dart';
 import 'package:finalproject/features/auth/screens/admin/admin_navigation.dart';
 import 'package:finalproject/features/auth/screens/register.dart';
+import 'package:finalproject/utils/jwt_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  // LOGIN FUNCTION
+  // LOGIN NORMAL
   void login() async {
     String email = emailController.text;
     String password = passwordController.text;
@@ -33,41 +35,79 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await AuthService.login(email, password);
 
       if (result['token'] != null) {
-        // simpan token
         await StorageService.saveToken(result['token']);
+        await StorageService.saveRole(result['user']['role']);
 
-        // ambil role dari backend
         final role = result['user']['role'];
-
-        // REDIRECT BERDASARKAN ROLE
-        if (role == 'organizer') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EONavigation(),
-            ),
-          );
-        } 
-        else if (role == 'admin') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminNavigation(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const Navigation(),
-            ),
-          );
-        }
+        navigateByRole(role);
       } else {
         showMsg(result['message'] ?? "Login gagal");
       }
     } catch (e) {
       showMsg("Tidak bisa konek ke server");
+    }
+  }
+
+  // LOGIN BIOMETRIC
+  void loginWithBiometric() async {
+    String? token = await StorageService.getToken();
+
+    bool biometricEnabled = await StorageService.getBiometric();
+
+    if (!biometricEnabled) {
+      showMsg("Biometric belum diaktifkan");
+      return;
+    }
+
+    if (token == null) {
+      showMsg("Silakan login dulu sekali");
+      return;
+    }
+
+    // CEK TOKEN EXPIRED
+    bool isExpired = JwtHelper.isExpired(token);
+
+    if (isExpired) {
+      showMsg("Session expired, silakan login ulang");
+
+      await StorageService.clear(); // hapus token
+      return;
+    }
+
+    // BIOMETRIC
+    bool success = await BiometricService.authenticate();
+
+    if (success) {
+      String? role = await StorageService.getRole();
+
+      if (role == null) {
+        showMsg("Role tidak ditemukan");
+        return;
+      }
+
+      navigateByRole(role);
+    } else {
+      showMsg("Fingerprint gagal");
+    }
+  }
+
+  // NAVIGASI ROLE 
+  void navigateByRole(String role) {
+    if (role == 'organizer') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const EONavigation()),
+      );
+    } else if (role == 'admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminNavigation()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const Navigation()),
+      );
     }
   }
 
@@ -184,14 +224,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 30),
 
+                // BUTTON LOGIN
                 SizedBox(
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE4572E),
-                      elevation: 5,
-                      shadowColor: Colors.black26,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -199,9 +238,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: login,
                     child: const Text(
                       "Sign In",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ===== OR =====
+                Row(
+                  children: const [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text("or"),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // ===== BIOMETRIC BUTTON =====
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: OutlinedButton.icon(
+                    onPressed: loginWithBiometric,
+                    icon: const Icon(Icons.fingerprint),
+                    label: const Text("Use Biometric Login"),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.black26),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                   ),

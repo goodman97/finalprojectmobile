@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:finalproject/services/auth_service.dart';
+import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
 
 class EOProfile extends StatefulWidget {
   const EOProfile({super.key});
@@ -13,6 +14,7 @@ class _EOProfileState extends State<EOProfile> {
   String name = "";
   String email = "";
   String role = "";
+  String telephone = "";
   bool isLoading = true;
 
   @override
@@ -28,6 +30,7 @@ class _EOProfileState extends State<EOProfile> {
       name = data["name"];
       email = data["email"];
       role = data["role"];
+      telephone = data["telephone"] ?? "-";
       isLoading = false;
     });
   }
@@ -60,8 +63,6 @@ class _EOProfileState extends State<EOProfile> {
                       style: const TextStyle(color: Colors.white, fontSize: 18)),
                   Text(email,
                       style: const TextStyle(color: Colors.white70)),
-                  Text("---",
-                      style: TextStyle(color: Colors.white60, fontSize: 12)),
                 ],
               ),
             ),
@@ -96,14 +97,14 @@ class _EOProfileState extends State<EOProfile> {
               ListTile(
                 leading: const Icon(Icons.email),
                 title: const Text("Email"),
-                subtitle: const Text("contact@livenation.com"),
+                subtitle: Text(email),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.phone),
                 title: const Text("Phone"),
-                subtitle: const Text("+1 (555) 987-6543"),
-              ),
+                subtitle: Text(telephone),
+                )
             ], title: "Contact Information"),
 
             const SizedBox(height: 20),
@@ -111,8 +112,23 @@ class _EOProfileState extends State<EOProfile> {
             // ACCOUNT
             sectionTitle("ACCOUNT"),
             sectionCard([
-              menuItem(Icons.person, "Edit Profile"),
-              menuItem(Icons.settings, "Account Settings"),
+              menuItem(
+                Icons.person,
+                "Edit Profile",
+                onTap: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EditProfile(),
+                    ),
+                  );
+
+                  if (result == true) {
+                    loadProfile(); // refresh data EO
+                  }
+                },
+              ),
+              //menuItem(Icons.settings, "Account Settings"),
               menuItem(Icons.notifications, "Notifications", badge: "2"),
             ]),
 
@@ -248,25 +264,36 @@ Widget sectionCard(List<Widget> children, {String? title}) {
   );
 }
 
-Widget menuItem(IconData icon, String title, {String? badge}) {
+Widget menuItem(
+  IconData icon,
+  String title, {
+  VoidCallback? onTap,
+  String? badge,
+}) {
   return Column(
     children: [
       ListTile(
         leading: Icon(icon, color: const Color(0xFF2F3E2F)),
         title: Text(title),
+
+        /// 🔥 INI YANG KAMU KURANGIN
+        onTap: onTap,
+
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (badge != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE4572E),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   badge,
-                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                  style:
+                      const TextStyle(color: Colors.white, fontSize: 10),
                 ),
               ),
             const SizedBox(width: 5),
