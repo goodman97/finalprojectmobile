@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_qr_scan.dart';
 
 class OrganizerTickets extends StatelessWidget {
   OrganizerTickets({super.key});
@@ -108,7 +109,14 @@ class OrganizerTickets extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 30, vertical: 12),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const QRScannerScreen(),
+                        ),
+                      );
+                    },
                     child: const Text("Open Scanner"),
                   )
                 ],
