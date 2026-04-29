@@ -8,12 +8,24 @@ import 'package:finalproject/features/auth/screens/user/minigame.dart';
 class Navigation extends StatefulWidget {
   const Navigation({super.key});
 
+  static void setIndex(BuildContext context, int index) {
+    final state = context.findAncestorStateOfType<_ScreenState>();
+    state?.changeTab(index);
+  }
+
   @override
   State<Navigation> createState() => _ScreenState();
 }
 
 class _ScreenState extends State<Navigation> {
+  
   int currentIndex = 0;
+
+  void changeTab(int index) {
+    setState(() {
+      currentIndex = index;
+    });
+  }
 
   final List<Widget> pages = const [
     HomeScreen(),
@@ -34,11 +46,7 @@ class _ScreenState extends State<Navigation> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
 
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
+        onTap: changeTab,
 
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),

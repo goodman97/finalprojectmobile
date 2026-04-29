@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:finalproject/services/auth_service.dart';
+import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
+import 'package:finalproject/config/api_config.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -10,10 +12,12 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
-
   String name = "";
   String email = "";
-  String date_created = "";
+  String dateCreated = "-";
+  String telephone = "-";
+  String? profileImage;
+
   bool isLoading = true;
 
   @override
@@ -26,24 +30,45 @@ class _ProfileState extends State<Profile> {
     try {
       final data = await AuthService.getProfile();
 
+      print("PROFILE DATA (PROFILE PAGE): $data");
+
       setState(() {
-        name = data["name"];
-        email = data["email"];
-        
-        DateTime parsedDate = DateTime.parse(data["created_at"]);
-        date_created = parsedDate.toIso8601String().substring(0, 10);
-        
+        name = data["name"]?.toString() ?? "-";
+        email = data["email"]?.toString() ?? "-";
+        telephone = data["telephone"]?.toString() ?? "-";
+
+        if (data["profile_image"] != null &&
+            data["profile_image"].toString().isNotEmpty) {
+          profileImage =
+              data["profile_image"].toString().replaceAll("\\", "/");
+        } else {
+          profileImage = null;
+        }
+
+        dateCreated = data["created_at"]?.toString() ?? "-";
+
         isLoading = false;
       });
     } catch (e) {
-      print("ERROR PROFILE: $e");
+      print("ERROR PROFILE PAGE: $e");
+
+      setState(() {
+        isLoading = false;
+      });
     }
+  }
+
+  ImageProvider? getProfileImage() {
+    if (profileImage != null && profileImage!.isNotEmpty) {
+      final url = "${ApiConfig.baseUrl}/$profileImage";
+      print("PROFILE IMAGE URL: $url");
+      return NetworkImage(url);
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-
-    // LOADING
     if (isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -52,12 +77,11 @@ class _ProfileState extends State<Profile> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
-
       body: SingleChildScrollView(
         child: Column(
           children: [
 
-            // HEADER
+            /// HEADER
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 40, 20, 80),
@@ -74,7 +98,6 @@ class _ProfileState extends State<Profile> {
               ),
               child: Column(
                 children: [
-
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -89,28 +112,18 @@ class _ProfileState extends State<Profile> {
 
                   const SizedBox(height: 20),
 
-                  // FOTO PROFIL
-                  Container(
-                    width: 90,
-                    height: 90,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : "",
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  // FOTO PROFILE 
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundImage: getProfileImage(),
+                    child: getProfileImage() == null
+                        ? const Icon(Icons.person, size: 40)
+                        : null,
                   ),
 
                   const SizedBox(height: 10),
 
-                  // NAME
+                  /// NAME
                   Text(
                     name,
                     style: const TextStyle(
@@ -122,7 +135,7 @@ class _ProfileState extends State<Profile> {
 
                   const SizedBox(height: 4),
 
-                  // EMAIL
+                  /// EMAIL
                   Text(
                     email,
                     style: const TextStyle(color: Colors.white70),
@@ -130,15 +143,16 @@ class _ProfileState extends State<Profile> {
 
                   const SizedBox(height: 4),
 
+                  /// DATE
                   Text(
-                    date_created,
+                    dateCreated,
                     style: const TextStyle(color: Colors.white60),
                   ),
                 ],
               ),
             ),
 
-            // STATS
+            /// STATS
             Transform.translate(
               offset: const Offset(0, -40),
               child: Padding(
@@ -153,18 +167,19 @@ class _ProfileState extends State<Profile> {
               ),
             ),
 
-            // CONTENT
+            /// CONTENT
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
 
+                  /// CONTACT
                   sectionCard(
                     title: "Contact Information",
                     child: Column(
                       children: [
                         infoTile(Icons.email, "Email", email),
-                        infoTile(Icons.phone, "Phone", "-"),
+                        infoTile(Icons.phone, "Phone", telephone),
                         infoTile(Icons.location_on, "Location", "-"),
                       ],
                     ),
@@ -172,25 +187,43 @@ class _ProfileState extends State<Profile> {
 
                   const SizedBox(height: 20),
 
+                  /// ACCOUNT
                   menuSection("Account", [
-                    menuItem(Icons.person, "Edit Profile"),
+                    menuItem(
+                      Icons.person,
+                      "Edit Profile",
+                      onTap: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EditProfile(),
+                          ),
+                        );
+
+                        if (result == true) {
+                          loadProfile();
+                        }
+                      },
+                    ),
                     menuItem(Icons.notifications, "Notifications"),
                   ]),
 
                   const SizedBox(height: 20),
 
+                  /// SUPPORT
                   menuSection("Support", [
                     menuItem(Icons.help, "Help Center"),
                   ]),
 
                   const SizedBox(height: 20),
 
-                  // LOGOUT
+                  /// LOGOUT
                   OutlinedButton.icon(
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        MaterialPageRoute(
+                            builder: (_) => const LoginScreen()),
                         (route) => false,
                       );
                     },
@@ -218,7 +251,8 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  // COMPONENT
+  /// COMPONENTS
+
   Widget statCard(String value, String label) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -228,11 +262,14 @@ class _ProfileState extends State<Profile> {
       ),
       child: Column(
         children: [
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 22,
-                  color: Color(0xFFE4572E),
-                  fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              color: Color(0xFFE4572E),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           Text(label),
         ],
       ),
@@ -277,11 +314,12 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Widget menuItem(IconData icon, String title) {
+  Widget menuItem(IconData icon, String title, {VoidCallback? onTap}) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
       trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
     );
   }
 }

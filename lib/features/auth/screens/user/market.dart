@@ -1,7 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:finalproject/services/market_service.dart';
+import 'package:finalproject/config/api_config.dart';
 
-class Market extends StatelessWidget {
+class Market extends StatefulWidget {
   const Market({super.key});
+
+  @override
+  State<Market> createState() => _MarketState();
+}
+
+class _MarketState extends State<Market> {
+  List events = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadEvents();
+  }
+
+  Future<void> loadEvents() async {
+    try {
+      final data = await MarketService.getEvents();
+
+      setState(() {
+        events = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("ERROR MARKET: $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  String formatDate(dynamic date) {
+    if (date == null) return "-";
+    try {
+      final d = DateTime.parse(date.toString());
+      return "${d.day}/${d.month}/${d.year}";
+    } catch (e) {
+      return "-";
+    }
+  }
+
+  String formatPrice(dynamic price) {
+    if (price == null) return "\$0";
+    return "\$${price.toString()}";
+  }
+
+  // 🔥 FIX IMAGE (ANTI NULL)
+  String formatImage(dynamic image) {
+    if (image == null || image.toString().isEmpty) {
+      return "";
+    }
+    return "${ApiConfig.baseUrl}/uploads/${image.toString()}";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,11 +65,10 @@ class Market extends StatelessWidget {
         child: Stack(
           children: [
 
-            // MAIN CONTENT
             Column(
               children: [
 
-                // HEADER 
+                // HEADER
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                   decoration: const BoxDecoration(
@@ -33,7 +85,6 @@ class Market extends StatelessWidget {
                   child: Column(
                     children: [
 
-                      // TITLE
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -66,7 +117,6 @@ class Market extends StatelessWidget {
 
                       const SizedBox(height: 15),
 
-                      // SEARCH
                       TextField(
                         decoration: InputDecoration(
                           hintText: "Search events...",
@@ -82,7 +132,6 @@ class Market extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
-                      // CATEGORY
                       Row(
                         children: [
                           categoryChip("All", true),
@@ -96,43 +145,29 @@ class Market extends StatelessWidget {
 
                 // LIST
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
 
-                      marketCard(
-                        image: "assets/images/concert.jpg",
-                        title: "Summer Music Festival",
-                        type: "VIP Pass",
-                        date: "Jun 15, 2026",
-                        price: "\$180",
-                        oldPrice: "\$199",
-                        save: "Save \$19",
-                      ),
+                            ...events.map((item) {
+                              return marketCard(
+                                image: formatImage(item["image"]),
+                                title: (item["name"] ?? "-").toString(),
+                                type: "Premium Ticket",
+                                date: formatDate(item["date"]),
+                                price: formatPrice(item["price"]),
+                                oldPrice: formatPrice(
+                                  (int.tryParse(item["price"].toString()) ?? 0) + 20000,
+                                ),
+                                save: "Save",
+                              );
+                            }).toList(),
 
-                      marketCard(
-                        image: "assets/images/balloon.jpg",
-                        title: "Hot Air Balloon Show",
-                        type: "Premium Ticket",
-                        date: "Jul 01, 2026",
-                        price: "\$250",
-                        oldPrice: "\$275",
-                        save: "Save \$25",
-                      ),
-
-                      marketCard(
-                        image: "assets/images/theater.jpg",
-                        title: "Broadway Spectacular",
-                        type: "Premium Ticket",
-                        date: "Jun 25, 2026",
-                        price: "\$270",
-                        oldPrice: "\$305",
-                        save: "Save \$35",
-                      ),
-
-                      const SizedBox(height: 80), // ruang buat badge
-                    ],
-                  ),
+                            const SizedBox(height: 80),
+                          ],
+                        ),
                 ),
               ],
             ),
@@ -178,7 +213,6 @@ class Market extends StatelessWidget {
     );
   }
 
-  // CATEGORY CHIP
   Widget categoryChip(String title, bool active) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
@@ -193,7 +227,6 @@ class Market extends StatelessWidget {
     );
   }
 
-  // MARKET CARD
   Widget marketCard({
     required String image,
     required String title,
@@ -213,12 +246,27 @@ class Market extends StatelessWidget {
 
           ClipRRect(
             borderRadius: BorderRadius.circular(25),
-            child: Image.asset(
-              image,
-              height: 220,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            child: image.isEmpty
+            ? Image.asset(
+                "assets/images/concert.jpg",
+                height: 220,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              )
+            : Image.network(
+                image,
+                height: 220,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) {
+                  return Image.asset(
+                    "assets/images/concert.jpg",
+                    height: 220,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  );
+                },
+              ),
           ),
 
           Container(
@@ -255,8 +303,7 @@ class Market extends StatelessWidget {
               children: [
 
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -273,7 +320,6 @@ class Market extends StatelessWidget {
                         fontWeight: FontWeight.bold)),
 
                 Text(type, style: const TextStyle(color: Colors.white70)),
-
                 Text(date, style: const TextStyle(color: Colors.white70)),
 
                 const SizedBox(height: 5),
@@ -303,12 +349,7 @@ class Market extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {},
-                      child: const Text(
-                        "View",
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 255, 255, 255)
-                        ),
-                        ),
+                      child: const Text("View"),
                     )
                   ],
                 )

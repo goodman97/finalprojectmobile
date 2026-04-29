@@ -1,24 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:finalproject/services/event_service.dart';
+import 'package:finalproject/config/api_config.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List events = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchEvents();
+  }
+
+  void fetchEvents() async {
+    try {
+      final data = await EventService.getEvents();
+      setState(() {
+        events = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("ERROR: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
-
       body: SafeArea(
         child: Column(
           children: [
 
-            // !SROLL / TETAP
+            // HEADER + SEARCH + CATEGORY
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
 
-                  // HEADER
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -40,32 +66,15 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Stack(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.notifications_none),
-                            onPressed: () {},
-                          ),
-                          Positioned(
-                            right: 10,
-                            top: 10,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          )
-                        ],
-                      )
+                      IconButton(
+                        icon: const Icon(Icons.notifications_none),
+                        onPressed: () {},
+                      ),
                     ],
                   ),
 
                   const SizedBox(height: 16),
 
-                  // SEARCH BAR
                   TextField(
                     decoration: InputDecoration(
                       hintText: "Search events...",
@@ -81,7 +90,6 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // CATEGORY
                   SizedBox(
                     height: 40,
                     child: ListView(
@@ -99,111 +107,44 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-            // SCROLL
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-
-                  // FEATURED EVENT
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(25),
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF2F3E2F),
-                          Color(0xFF4E5F4E),
-                        ],
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.auto_awesome,
-                                color: Color(0xFFE4572E), size: 18),
-                            SizedBox(width: 6),
-                            Text(
-                              "Featured Event",
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          "Summer Music Festival",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          "3 days of amazing performances",
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        const SizedBox(height: 15),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE4572E),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          onPressed: () {},
-                          child: const Text(
-                            "Get Tickets",
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 255, 255, 255),
-                            ),),
-                        )
-                      ],
-                    ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Upcoming Events",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2F3E2F),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // EVENTS
-                  eventCard(
-                    title: "Summer Music Festival",
-                    date: "Jun 15, 2026",
-                    location: "Central Park",
-                    category: "Music",
-                    price: "\$50",
-                    image: "assets/images/concert.jpg",
-                  ),
-
-                  eventCard(
-                    title: "Broadway Spectacular",
-                    date: "Jun 25, 2026",
-                    location: "Lincoln Center",
-                    category: "Theater",
-                    price: "\$45",
-                    image: "assets/images/theater.jpg",
-                  ),
-
-                  eventCard(
-                    title: "Championship Finals",
-                    date: "Jul 10, 2026",
-                    location: "Metro Stadium",
-                    category: "Sports",
-                    price: "\$95",
-                    image: "assets/images/stadium.jpg",
-                  ),
-
-                  eventCard(
-                    title: "Modern Art Showcase",
-                    date: "Jun 30, 2026",
-                    location: "Downtown Gallery",
-                    category: "Art",
-                    price: "\$35",
-                    image: "assets/images/gallery.jpg",
-                  ),
-                ],
+                ),
               ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // LIST EVENT
+            Expanded(
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                    
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: events.length,
+                      itemBuilder: (context, index) {
+                        final event = events[index];
+
+                        return eventCard(
+                          title: event['name'] ?? '-',
+                          date: formatDate(event['date']),
+                          location: event['address'] ?? '-',
+                          category: event['status'] ?? 'Event',
+                          price: "Rp ${event['price'] ?? 0}",
+                          image: event['image'],
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -211,7 +152,18 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // 🔘 CATEGORY CHIP
+  // FORMAT DATE
+  String formatDate(String? date) {
+    if (date == null) return "-";
+    try {
+      final parsed = DateTime.parse(date);
+      return "${parsed.day}-${parsed.month}-${parsed.year}";
+    } catch (e) {
+      return date;
+    }
+  }
+
+  // CATEGORY CHIP
   Widget categoryChip(String title, bool active) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
@@ -226,43 +178,52 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // 🎟️ EVENT CARD
+  // EVENT CARD
   Widget eventCard({
     required String title,
     required String date,
     required String location,
     required String category,
-    required String image,
+    required String? image,
     String? price,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16), // 🔥 AUTO JARAK
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(25),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
+          BoxShadow(color: Colors.black12, blurRadius: 8),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
+          // IMAGE
           Stack(
             children: [
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.asset(
-                  image,
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(25)),
+                child: image != null
+                    ? Image.network(
+                        "${ApiConfig.baseUrl}/uploads/$image",
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Image.asset("assets/images/concert.jpg",
+                                height: 180, fit: BoxFit.cover),
+                      )
+                    : Image.asset("assets/images/concert.jpg",
+                        height: 180, fit: BoxFit.cover),
               ),
 
               if (price != null)
                 Positioned(
-                  right: 10,
-                  top: 10,
+                  right: 12,
+                  top: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 5),
@@ -278,8 +239,8 @@ class HomeScreen extends StatelessWidget {
                 ),
 
               Positioned(
-                left: 10,
-                bottom: 10,
+                left: 12,
+                bottom: 12,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
@@ -293,26 +254,40 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
 
+          // INFO
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2F3E2F),
+                  ),
+                ),
 
                 const SizedBox(height: 6),
 
                 Row(
                   children: [
                     const Icon(Icons.calendar_today, size: 14),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     Text(date),
+
                     const SizedBox(width: 12),
+
                     const Icon(Icons.location_on, size: 14),
-                    const SizedBox(width: 4),
-                    Text(location),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        location,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 )
               ],
