@@ -107,11 +107,29 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Upcoming Events",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2F3E2F),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
             // LIST EVENT
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ListView.builder(
+                    
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: events.length,
                       itemBuilder: (context, index) {
@@ -170,39 +188,42 @@ class _HomeScreenState extends State<HomeScreen> {
     String? price,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(25),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6),
+          BoxShadow(color: Colors.black12, blurRadius: 8),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
+          // IMAGE
           Stack(
             children: [
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(25)),
                 child: image != null
                     ? Image.network(
                         "${ApiConfig.baseUrl}/uploads/$image",
-                        height: 150,
+                        height: 180,
                         width: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
                             Image.asset("assets/images/concert.jpg",
-                                height: 150, fit: BoxFit.cover),
+                                height: 180, fit: BoxFit.cover),
                       )
                     : Image.asset("assets/images/concert.jpg",
-                        height: 150, fit: BoxFit.cover),
+                        height: 180, fit: BoxFit.cover),
               ),
 
               if (price != null)
                 Positioned(
-                  right: 10,
-                  top: 10,
+                  right: 12,
+                  top: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 5),
@@ -218,8 +239,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
 
               Positioned(
-                left: 10,
-                bottom: 10,
+                left: 12,
+                bottom: 12,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
@@ -233,26 +254,40 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
+          // INFO
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2F3E2F),
+                  ),
+                ),
 
                 const SizedBox(height: 6),
 
                 Row(
                   children: [
                     const Icon(Icons.calendar_today, size: 14),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     Text(date),
+
                     const SizedBox(width: 12),
+
                     const Icon(Icons.location_on, size: 14),
-                    const SizedBox(width: 4),
-                    Text(location),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        location,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 )
               ],

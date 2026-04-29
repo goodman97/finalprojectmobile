@@ -16,7 +16,7 @@ class _ProfileState extends State<Profile> {
   String email = "";
   String dateCreated = "-";
   String telephone = "-";
-  String? photoProfile;
+  String? profileImage;
 
   bool isLoading = true;
 
@@ -37,26 +37,15 @@ class _ProfileState extends State<Profile> {
         email = data["email"]?.toString() ?? "-";
         telephone = data["telephone"]?.toString() ?? "-";
 
-        if (data["photo_profile"] != null &&
-            data["photo_profile"].toString().isNotEmpty) {
-          photoProfile =
-              data["photo_profile"].toString().replaceAll("\\", "/");
+        if (data["profile_image"] != null &&
+            data["profile_image"].toString().isNotEmpty) {
+          profileImage =
+              data["profile_image"].toString().replaceAll("\\", "/");
         } else {
-          photoProfile = null;
+          profileImage = null;
         }
 
-        if (data["created_at"] != null &&
-            data["created_at"].toString().isNotEmpty) {
-          try {
-            DateTime parsed =
-                DateTime.parse(data["created_at"].toString());
-            dateCreated = parsed.toIso8601String().substring(0, 10);
-          } catch (e) {
-            dateCreated = "-";
-          }
-        } else {
-          dateCreated = "-";
-        }
+        dateCreated = data["created_at"]?.toString() ?? "-";
 
         isLoading = false;
       });
@@ -70,8 +59,8 @@ class _ProfileState extends State<Profile> {
   }
 
   ImageProvider? getProfileImage() {
-    if (photoProfile != null && photoProfile!.isNotEmpty) {
-      final url = "${ApiConfig.baseUrl}/$photoProfile";
+    if (profileImage != null && profileImage!.isNotEmpty) {
+      final url = "${ApiConfig.baseUrl}/$profileImage";
       print("PROFILE IMAGE URL: $url");
       return NetworkImage(url);
     }
@@ -125,22 +114,10 @@ class _ProfileState extends State<Profile> {
 
                   // FOTO PROFILE 
                   CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Colors.white,
+                    radius: 50,
                     backgroundImage: getProfileImage(),
-                    onBackgroundImageError: (_, __) {
-                      print("IMAGE LOAD FAILED");
-                    },
                     child: getProfileImage() == null
-                        ? Text(
-                            name.isNotEmpty
-                                ? name[0].toUpperCase()
-                                : "?",
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
+                        ? const Icon(Icons.person, size: 40)
                         : null,
                   ),
 

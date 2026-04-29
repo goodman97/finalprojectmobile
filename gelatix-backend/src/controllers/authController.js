@@ -28,7 +28,7 @@ exports.register = async (req, res) => {
     // 3. Hash password
     const hashed = await bcrypt.hash(password, 10);
 
-    // 4. Insert (biarkan DB handle default field)
+    // 4. Insert
     const result = await pool.query(
       `INSERT INTO users (name, email, password)
        VALUES ($1, $2, $3)
@@ -81,7 +81,16 @@ exports.getProfile = async (req, res) => {
     const userId = req.user.id;
 
     const result = await pool.query(
-      "SELECT id, name, email, role, telephone, photo_profile FROM users WHERE id = $1",
+      `SELECT 
+        id, 
+        name, 
+        email, 
+        role, 
+        telephone, 
+        profile_image,
+        TO_CHAR(created_at, 'DD Mon YYYY') AS created_at
+      FROM users 
+      WHERE id = $1`,
       [userId]
     );
 
@@ -157,7 +166,7 @@ exports.uploadPhoto = async (req, res) => {
     const filePath = req.file.path;
 
     await pool.query(
-      "UPDATE users SET photo_profile = $1 WHERE id = $2",
+      "UPDATE users SET profile_image = $1 WHERE id = $2",
       [filePath, userId]
     );
 

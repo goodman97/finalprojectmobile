@@ -25,6 +25,7 @@ class MyApp extends StatelessWidget {
       builder: DevicePreview.appBuilder,
 
       home: LoginScreen(),
+      
     );
   }
 }
