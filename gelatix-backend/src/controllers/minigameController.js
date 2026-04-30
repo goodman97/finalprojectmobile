@@ -13,6 +13,8 @@ const rewards = [
   { type: "discount", value: 5, chance: 7 },
 ];
 
+const allowFreeSpin = process.env.ALLOW_FREE_SPIN === "true";
+
 // weighted random
 function getRandomReward() {
   const total = rewards.reduce((sum, r) => sum + r.chance, 0);
@@ -57,7 +59,11 @@ exports.getGameData = async (req, res) => {
       [userId]
     );
 
-    const totalSpins = parseInt(trx.rows[0].count);
+     let totalSpins = parseInt(trx.rows[0].count);
+
+    if (allowFreeSpin) {
+      totalSpins = 999;
+    }
 
     res.json({
       points: pointsRes.rows[0].total_points,
@@ -98,7 +104,7 @@ exports.spin = async (req, res) => {
       );
     }
 
-    if (used >= totalSpins) {
+    if (!allowFreeSpin && used >= totalSpins) {
       return res.status(400).json({
         message: "Spin habis",
       });
@@ -108,10 +114,12 @@ exports.spin = async (req, res) => {
     const reward = getRandomReward();
 
     // update spin
-    await db.query(
-      "UPDATE game_users SET total_spins = total_spins + 1 WHERE user_id = $1",
-      [userId]
-    );
+    if (!allowFreeSpin) {
+      await db.query(
+        "UPDATE game_users SET total_spins = total_spins + 1 WHERE user_id = $1",
+        [userId]
+      );
+    }
 
     // POINT
     if (reward.type === "points") {

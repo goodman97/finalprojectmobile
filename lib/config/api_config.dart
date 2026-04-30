@@ -14,6 +14,6 @@ class ApiConfig {
     }
 
     // untuk iOS / desktop
-    return "http://localhost:5000";
+    return "http://192.168.100.238:5000";
   }
 }
