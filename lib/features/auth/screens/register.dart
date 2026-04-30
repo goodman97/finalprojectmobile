@@ -148,9 +148,9 @@ class _RegisterScreenState extends State<Register> {
 
               const SizedBox(height: 30),
 
-              Expanded(
-                child: step == 1 ? stepOne() : stepTwo(),
-              ),
+              step == 1 ? stepOne() : stepTwo(),
+
+              const SizedBox(height: 30),
 
               SizedBox(
                 width: double.infinity,
@@ -164,9 +164,7 @@ class _RegisterScreenState extends State<Register> {
                   ),
                   child: Text(
                     step == 1 ? "Continue" : "Create Account",
-                    style: TextStyle(
-                      color: const Color.fromARGB(255, 255, 255, 255), // ganti sesuai warna yang kamu mau
-                    ),
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               ),
