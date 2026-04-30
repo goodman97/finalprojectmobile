@@ -130,9 +130,15 @@ class _EditProfileState extends State<EditProfile> {
   }
 
   Future<void> pickImageWeb() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+
     if (result != null) {
-      setState(() => webImage = result.files.first.bytes);
+      setState(() {
+        webImage = result.files.first.bytes;
+      });
     }
   }
 
