@@ -12,6 +12,7 @@ dependencies:
   device_preview: ^1.1.0
   http: ^1.6.0
   shared_preferences: ^2.5.5
+  mobile_scanner: ^5.0.0
   image_picker: ^1.2.1
   file_picker: ^8.0.0
   local_auth: ^2.1.6
@@ -25,7 +26,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
   assets:
     - assets/images/design_logo.png
     - assets/images/concert.jpg
