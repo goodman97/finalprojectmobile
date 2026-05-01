@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:finalproject/services/event_service.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -12,195 +17,196 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   DateTime? endDate;
   TimeOfDay? startTime;
 
+  final nameController = TextEditingController();
+  final locationController = TextEditingController();
+  final priceController = TextEditingController();
+  final quotaController = TextEditingController();
+  final descController = TextEditingController();
+
+  File? imageFile;
+  Uint8List? webImage;
+
+  final picker = ImagePicker();
+
+  Future pickImage() async {
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          webImage = bytes;
+        });
+      } else {
+        setState(() {
+          imageFile = File(picked.path);
+        });
+      }
+    }
+  }
+
+  String formatDateTime(DateTime date, TimeOfDay time) {
+    final dt = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    return dt.toIso8601String();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
+      appBar: AppBar(
+        title: const Text("Create Event"),
+        backgroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
 
-            /// 🔥 HEADER
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 60, 16, 20),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF2F3E2F), Color(0xFF4E5F4E)],
+            /// IMAGE
+            GestureDetector(
+              onTap: pickImage,
+              child: Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        "Create Event",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        "Fill in the event details",
-                        style: TextStyle(color: Colors.white70),
+                child: webImage != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.memory(webImage!, fit: BoxFit.cover),
                       )
-                    ],
-                  )
-                ],
+                    : imageFile != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.file(imageFile!, fit: BoxFit.cover),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.image, size: 40),
+                              Text("Click to upload image"),
+                            ],
+                          ),
               ),
             ),
 
-            /// 🔥 BODY
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            const SizedBox(height: 20),
 
-                  /// IMAGE UPLOAD
-                  const Text("Event Image"),
-                  const SizedBox(height: 10),
-                  Container(
-                    height: 150,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                        style: BorderStyle.solid,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.image, size: 40, color: Colors.grey),
-                        SizedBox(height: 10),
-                        Text("Click to upload image"),
-                        Text("PNG, JPG up to 5MB",
-                            style: TextStyle(fontSize: 12))
-                      ],
-                    ),
-                  ),
+            _field("Event Name", controller: nameController),
+            _field("Location", controller: locationController),
 
-                  const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(child: _dateField("Start Date", startDate, (d) {
+                  setState(() => startDate = d);
+                })),
+                const SizedBox(width: 10),
+                Expanded(child: _dateField("End Date", endDate, (d) {
+                  setState(() => endDate = d);
+                })),
+              ],
+            ),
 
-                  /// EVENT NAME
-                  _field("Event Name"),
+            const SizedBox(height: 15),
 
-                  /// LOCATION
-                  _field("Location", icon: Icons.location_on),
+            _timeField(),
 
-                  /// DATE ROW
-                  Row(
-                    children: [
-                      Expanded(child: _dateField("Start Date", startDate, (d) {
-                        setState(() => startDate = d);
-                      })),
-                      const SizedBox(width: 10),
-                      Expanded(child: _dateField("End Date", endDate, (d) {
-                        setState(() => endDate = d);
-                      })),
-                    ],
-                  ),
+            const SizedBox(height: 15),
 
-                  const SizedBox(height: 15),
+            Row(
+              children: [
+                Expanded(child: _field("Price", controller: priceController)),
+                const SizedBox(width: 10),
+                Expanded(child: _field("Quota", controller: quotaController)),
+              ],
+            ),
 
-                  /// TIME
-                  _timeField(),
+            const SizedBox(height: 15),
 
-                  const SizedBox(height: 15),
-
-                  /// PRICE & QUOTA
-                  Row(
-                    children: [
-                      Expanded(child: _field("Ticket Price", icon: Icons.attach_money)),
-                      const SizedBox(width: 10),
-                      Expanded(child: _field("Quota", icon: Icons.people)),
-                    ],
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  /// DESCRIPTION
-                  const Text("Description"),
-                  const SizedBox(height: 5),
-                  Container(
-                    height: 120,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Align(
-                      alignment: Alignment.topLeft,
-                      child: Text(
-                        "Tell people about your event...",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  /// 🔥 PUBLISH BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context, true);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE4572E),
-                        padding: const EdgeInsets.all(16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: const Text("Publish Event"),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  /// CANCEL BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.all(16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: const Text("Cancel"),
-                    ),
-                  ),
-                ],
+            TextField(
+              controller: descController,
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: "Description...",
+                filled: true,
+                fillColor: Colors.grey[200],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide.none,
+                ),
               ),
-            )
+            ),
+
+            const SizedBox(height: 25),
+
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  if (startDate == null || endDate == null || startTime == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Lengkapi tanggal & waktu")),
+                    );
+                    return;
+                  }
+
+                  final start = formatDateTime(startDate!, startTime!);
+                  final end = formatDateTime(endDate!, startTime!);
+
+                  await EventService.createEvent(
+                    name: nameController.text,
+                    location: locationController.text,
+                    description: descController.text,
+                    startDate: start,
+                    endDate: end,
+                    price: priceController.text,
+                    quota: quotaController.text,
+                    image: imageFile,
+                    webImage: webImage,
+                  );
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Event berhasil dibuat")),
+                  );
+
+                  Navigator.pop(context, true);
+                } catch (e) {
+                  print("ERROR: $e");
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Gagal membuat event")),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE4572E),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: const Text("Publish Event"),
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// 🔹 INPUT FIELD
-  Widget _field(String hint, {IconData? icon}) {
+  Widget _field(String hint, {TextEditingController? controller}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextField(
+        controller: controller,
         decoration: InputDecoration(
           hintText: hint,
-          prefixIcon: icon != null ? Icon(icon) : null,
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.grey[200],
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide.none,
@@ -210,79 +216,53 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     );
   }
 
-  /// 🔹 DATE FIELD
   Widget _dateField(String label, DateTime? value, Function(DateTime) onPick) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label),
-        const SizedBox(height: 5),
-        GestureDetector(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-            );
-            if (picked != null) onPick(picked);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16),
-                const SizedBox(width: 8),
-                Text(value == null
-                    ? "dd/mm/yyyy"
-                    : "${value.day}/${value.month}/${value.year}")
-              ],
-            ),
-          ),
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+        );
+        if (picked != null) onPick(picked);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
         ),
-      ],
+        child: Text(
+          value == null
+              ? label
+              : "${value.day}/${value.month}/${value.year}",
+        ),
+      ),
     );
   }
 
-  /// 🔹 TIME FIELD
   Widget _timeField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Start Time"),
-        const SizedBox(height: 5),
-        GestureDetector(
-          onTap: () async {
-            final picked = await showTimePicker(
-              context: context,
-              initialTime: TimeOfDay.now(),
-            );
-            if (picked != null) {
-              setState(() => startTime = picked);
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.access_time, size: 16),
-                const SizedBox(width: 8),
-                Text(startTime == null
-                    ? "--:--"
-                    : startTime!.format(context))
-              ],
-            ),
-          ),
+    return GestureDetector(
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+        );
+        if (picked != null) {
+          setState(() => startTime = picked);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
         ),
-      ],
+        child: Text(
+          startTime == null ? "Select Time" : startTime!.format(context),
+        ),
+      ),
     );
   }
 }

@@ -1,7 +1,18 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const eventController = require('../controllers/eventController');
+const eventController = require("../controllers/eventController");
+const upload = require("../middleware/uploadMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
-router.get('/', eventController.getAllEvents);
+// PUBLIC
+router.get("/", eventController.getAllEvents);
+
+// PRIVATE (CREATE EVENT)
+router.post(
+  "/create",
+  authMiddleware,
+  upload.single("image"),
+  eventController.createEvent
+);
 
 module.exports = router;
