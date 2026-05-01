@@ -17,6 +17,8 @@ class _ProfileState extends State<Profile> {
   String dateCreated = "-";
   String telephone = "-";
   String? profileImage;
+  int totalTickets = 0;
+  int totalAttended = 0;
 
   bool isLoading = true;
 
@@ -46,6 +48,12 @@ class _ProfileState extends State<Profile> {
         }
 
         dateCreated = data["created_at"]?.toString() ?? "-";
+
+        totalTickets =
+            int.tryParse(data["total_tickets"].toString()) ?? 0;
+
+        totalAttended =
+            int.tryParse(data["total_attended"].toString()) ?? 0;
 
         isLoading = false;
       });
@@ -159,9 +167,19 @@ class _ProfileState extends State<Profile> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    Expanded(child: statCard("24", "Tickets Bought")),
+                    Expanded(
+                      child: statCard(
+                        totalTickets.toString(),
+                        "Tickets Bought",
+                      ),
+                    ),
                     const SizedBox(width: 16),
-                    Expanded(child: statCard("18", "Events Attended")),
+                    Expanded(
+                      child: statCard(
+                        totalAttended.toString(),
+                        "Events Attended",
+                      ),
+                    ),
                   ],
                 ),
               ),

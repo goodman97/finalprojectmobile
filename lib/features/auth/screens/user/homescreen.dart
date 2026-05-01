@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/services/event_service.dart';
 import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/features/auth/screens/user/event_detail.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -142,6 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             final event = events[index];
 
                             return eventCard(
+                              event: event,
                               title: event['name'] ?? '-',
                               date: formatDate(event['start_date']),
                               location: event['address'] ?? '-',
@@ -195,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// EVENT CARD
   Widget eventCard({
+    required Map event,
     required String title,
     required String date,
     required String location,
@@ -204,8 +207,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        print("OPEN EVENT: $title");
-        // nanti connect ke Event Detail Screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EventDetail(
+              event: Map<String, dynamic>.from(event),
+            ),
+          ),
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
@@ -231,15 +240,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(25)),
                   child: (image != null && image.isNotEmpty)
-                      ? Image.network(
-                          "${ApiConfig.baseUrl}/$image",
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              Image.asset("assets/images/concert.jpg", fit: BoxFit.cover),
-                        )
-                      : Image.asset("assets/images/concert.jpg", fit: BoxFit.cover),
+                    ? Image.network(
+                        "${ApiConfig.baseUrl}/uploads/events/$image",
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) {
+                          return Image.asset(
+                            "assets/images/concert.jpg",
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      )
+                    : Image.asset(
+                        "assets/images/concert.jpg",
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
                 ),
 
                 /// PRICE

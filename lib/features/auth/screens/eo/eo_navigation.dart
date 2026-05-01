@@ -2,21 +2,21 @@
   import 'package:finalproject/features/auth/screens/eo/eo_homescreen.dart';
   import 'package:finalproject/features/auth/screens/eo/eo_profile.dart';
   import 'package:finalproject/features/auth/screens/eo/eo_scan.dart';
-  import 'package:finalproject/features/auth/screens/eo/eo_event.dart';
+  import 'package:finalproject/features/auth/screens/eo/eo_my_events.dart';
 
-  class EONavigation extends StatefulWidget {
-    const EONavigation({super.key});
+  class EoNavigation extends StatefulWidget {
+    const EoNavigation({super.key});
 
     @override
-    State<EONavigation> createState() => _EONavigationState();
+    State<EoNavigation> createState() => _EoNavigationState();
   }
 
-  class _EONavigationState extends State<EONavigation> {
+  class _EoNavigationState extends State<EoNavigation> {
     int currentIndex = 0;
 
     final screens = [
-      const EOHomeScreen(),
-      MyEventsScreen(),
+      const EoHomescreen(),
+      EoMyEvents(),
       OrganizerTickets(),
       const EOProfile(),
     ];

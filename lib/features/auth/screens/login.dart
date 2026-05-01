@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (role == 'organizer') {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const EONavigation()),
+        MaterialPageRoute(builder: (_) => const EoNavigation()),
       );
     } else if (role == 'admin') {
       Navigator.pushReplacement(

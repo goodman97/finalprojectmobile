@@ -80,7 +80,8 @@ exports.getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const result = await pool.query(
+    // profile user
+    const userResult = await pool.query(
       `SELECT 
         id, 
         name, 
@@ -94,7 +95,39 @@ exports.getProfile = async (req, res) => {
       [userId]
     );
 
-    res.json(result.rows[0]);
+    // total tickets bought
+    const ticketResult = await pool.query(
+      `
+      SELECT COUNT(*) AS total_tickets
+      FROM tickets
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    // total events attended
+    const attendedResult = await pool.query(
+      `
+      SELECT COUNT(*) AS total_attended
+      FROM tickets
+      WHERE user_id = $1
+      AND status = 'used'
+      `,
+      [userId]
+    );
+
+    res.json({
+      id: userResult.rows[0].id,
+      name: userResult.rows[0].name,
+      email: userResult.rows[0].email,
+      role: userResult.rows[0].role,
+      telephone: userResult.rows[0].telephone,
+      profile_image: userResult.rows[0].profile_image,
+      created_at: userResult.rows[0].created_at,
+
+      total_tickets: ticketResult.rows[0].total_tickets,
+      total_attended: attendedResult.rows[0].total_attended,
+    });
 
   } catch (err) {
     console.error("GET PROFILE ERROR:", err);

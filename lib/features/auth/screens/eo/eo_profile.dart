@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:finalproject/services/auth_service.dart';
 import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
+import 'package:finalproject/services/eo_event_service.dart';
 
 class EOProfile extends StatefulWidget {
   const EOProfile({super.key});
@@ -16,6 +17,9 @@ class _EOProfileState extends State<EOProfile> {
   String role = "";
   String telephone = "";
   bool isLoading = true;
+  int totalEvents = 0;
+  int totalTickets = 0;
+  double totalRevenue = 0;
 
   @override
   void initState() {
@@ -24,15 +28,40 @@ class _EOProfileState extends State<EOProfile> {
   }
 
   Future<void> loadProfile() async {
-    final data = await AuthService.getProfile();
+    try {
+      final profileData = await AuthService.getProfile();
+      final dashboardData = await EoEventService.getDashboard();
 
-    setState(() {
-      name = data["name"];
-      email = data["email"];
-      role = data["role"];
-      telephone = data["telephone"] ?? "-";
-      isLoading = false;
-    });
+      setState(() {
+        name = profileData["name"];
+        email = profileData["email"];
+        role = profileData["role"];
+        telephone = profileData["telephone"] ?? "-";
+
+        totalEvents = int.tryParse(
+              dashboardData["stats"]["total_events"].toString(),
+            ) ??
+            0;
+
+        totalTickets = int.tryParse(
+              dashboardData["stats"]["total_sold"].toString(),
+            ) ??
+            0;
+
+        totalRevenue = double.tryParse(
+              dashboardData["stats"]["total_revenue"].toString(),
+            ) ??
+            0;
+
+        isLoading = false;
+      });
+    } catch (e) {
+      print("PROFILE ERROR: $e");
+
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Widget build(BuildContext context) {
@@ -81,11 +110,22 @@ class _EOProfileState extends State<EOProfile> {
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: const [
-                    statItem("8", "Events"),
-                    statItem("1254", "Tickets", isAccent: true),
-                    statItem("\$32,450", "Revenue", isGreen: true),
-                  ],
+                  children: [
+                  statItem(
+                    totalEvents.toString(),
+                    "Events",
+                  ),
+                  statItem(
+                    totalTickets.toString(),
+                    "Tickets",
+                    isAccent: true,
+                  ),
+                  statItem(
+                    "Rp ${totalRevenue.toInt()}",
+                    "Revenue",
+                    isGreen: true,
+                  ),
+                ],
                 ),
               ),
             ),
