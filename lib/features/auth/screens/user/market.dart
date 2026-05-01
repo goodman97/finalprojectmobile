@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/services/market_service.dart';
 import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/features/auth/screens/user/event_detail.dart';
 
 class Market extends StatefulWidget {
   const Market({super.key});
@@ -22,7 +23,6 @@ class _MarketState extends State<Market> {
   Future<void> loadEvents() async {
     try {
       final data = await MarketService.getEvents();
-
       setState(() {
         events = data;
         isLoading = false;
@@ -48,11 +48,8 @@ class _MarketState extends State<Market> {
     return "\$${price.toString()}";
   }
 
-  // 🔥 FIX IMAGE (ANTI NULL)
   String formatImage(dynamic image) {
-    if (image == null || image.toString().isEmpty) {
-      return "";
-    }
+    if (image == null || image.toString().isEmpty) return "";
     return "${ApiConfig.baseUrl}/uploads/${image.toString()}";
   }
 
@@ -60,14 +57,11 @@ class _MarketState extends State<Market> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
-
       body: SafeArea(
         child: Stack(
           children: [
-
             Column(
               children: [
-
                 // HEADER
                 Container(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
@@ -76,15 +70,11 @@ class _MarketState extends State<Market> {
                       bottom: Radius.circular(30),
                     ),
                     gradient: LinearGradient(
-                      colors: [
-                        Color(0xFF2F3E2F),
-                        Color(0xFF4E5F4E),
-                      ],
+                      colors: [Color(0xFF2F3E2F), Color(0xFF4E5F4E)],
                     ),
                   ),
                   child: Column(
                     children: [
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -108,15 +98,14 @@ class _MarketState extends State<Market> {
                           CircleAvatar(
                             backgroundColor: Colors.white24,
                             child: IconButton(
-                              icon: const Icon(Icons.filter_list, color: Colors.white),
+                              icon: const Icon(Icons.filter_list,
+                                  color: Colors.white),
                               onPressed: () {},
                             ),
                           )
                         ],
                       ),
-
                       const SizedBox(height: 15),
-
                       TextField(
                         decoration: InputDecoration(
                           hintText: "Search events...",
@@ -129,9 +118,7 @@ class _MarketState extends State<Market> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 10),
-
                       Row(
                         children: [
                           categoryChip("All", true),
@@ -150,21 +137,22 @@ class _MarketState extends State<Market> {
                       : ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
-
                             ...events.map((item) {
                               return marketCard(
+                                event: item,
                                 image: formatImage(item["image"]),
                                 title: (item["name"] ?? "-").toString(),
                                 type: "Premium Ticket",
                                 date: formatDate(item["date"]),
                                 price: formatPrice(item["price"]),
                                 oldPrice: formatPrice(
-                                  (int.tryParse(item["price"].toString()) ?? 0) + 20000,
+                                  (int.tryParse(item["price"].toString()) ??
+                                          0) +
+                                      20000,
                                 ),
                                 save: "Save",
                               );
                             }).toList(),
-
                             const SizedBox(height: 80),
                           ],
                         ),
@@ -195,7 +183,8 @@ class _MarketState extends State<Market> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("Buyer Protection",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                              style:
+                                  TextStyle(fontWeight: FontWeight.bold)),
                           Text(
                             "All tickets are verified and secured",
                             style: TextStyle(fontSize: 12),
@@ -218,8 +207,7 @@ class _MarketState extends State<Market> {
       margin: const EdgeInsets.only(right: 10),
       child: Chip(
         label: Text(title),
-        backgroundColor:
-            active ? const Color(0xFFE4572E) : Colors.white,
+        backgroundColor: active ? const Color(0xFFE4572E) : Colors.white,
         labelStyle: TextStyle(
           color: active ? Colors.white : Colors.black,
         ),
@@ -228,6 +216,7 @@ class _MarketState extends State<Market> {
   }
 
   Widget marketCard({
+    required Map event,
     required String image,
     required String title,
     required String type,
@@ -243,30 +232,29 @@ class _MarketState extends State<Market> {
       ),
       child: Stack(
         children: [
-
           ClipRRect(
             borderRadius: BorderRadius.circular(25),
             child: image.isEmpty
-            ? Image.asset(
-                "assets/images/concert.jpg",
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              )
-            : Image.network(
-                image,
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) {
-                  return Image.asset(
+                ? Image.asset(
                     "assets/images/concert.jpg",
                     height: 220,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                  );
-                },
-              ),
+                  )
+                : Image.network(
+                    image,
+                    height: 220,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return Image.asset(
+                        "assets/images/concert.jpg",
+                        height: 220,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
           ),
 
           Container(
@@ -285,12 +273,14 @@ class _MarketState extends State<Market> {
             right: 10,
             top: 10,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: const Color(0xFFE4572E),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(save, style: const TextStyle(color: Colors.white)),
+              child: Text(save,
+                  style: const TextStyle(color: Colors.white)),
             ),
           ),
 
@@ -301,29 +291,26 @@ class _MarketState extends State<Market> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text("Verified"),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(title,
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
-
-                Text(type, style: const TextStyle(color: Colors.white70)),
-                Text(date, style: const TextStyle(color: Colors.white70)),
-
+                Text(type,
+                    style: const TextStyle(color: Colors.white70)),
+                Text(date,
+                    style: const TextStyle(color: Colors.white70)),
                 const SizedBox(height: 5),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -338,7 +325,8 @@ class _MarketState extends State<Market> {
                         Text(oldPrice,
                             style: const TextStyle(
                                 color: Colors.white54,
-                                decoration: TextDecoration.lineThrough)),
+                                decoration:
+                                    TextDecoration.lineThrough)),
                       ],
                     ),
                     ElevatedButton(
@@ -348,8 +336,17 @@ class _MarketState extends State<Market> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                       ),
-                      onPressed: () {},
-                      child: const Text("View"),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EventDetail(event: Map<String, dynamic>.from(event)),
+                          ),
+                        );
+                      },
+                      child: const Text("View",
+                          style: TextStyle(color: Colors.white)),
                     )
                   ],
                 )

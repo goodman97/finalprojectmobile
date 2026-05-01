@@ -6,7 +6,7 @@ import 'package:finalproject/services/storage_service.dart';
 class MiniGameService {
   static String get baseUrl => "${ApiConfig.baseUrl}/api/minigame";
 
-  // 🔹 GET DATA
+  // GET DATA (points, spins, vouchers, tickets)
   static Future<Map<String, dynamic>> getGameData() async {
     final token = await StorageService.getToken();
 
@@ -22,13 +22,18 @@ class MiniGameService {
     print("GAME BODY: ${response.body}");
 
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final data = jsonDecode(response.body);
+      // Ensure vouchers field exists
+      if (data["vouchers"] == null) data["vouchers"] = [];
+      // Ensure tickets field exists
+      if (data["tickets"] == null) data["tickets"] = 0;
+      return data;
     } else {
       throw Exception("Failed load game data");
     }
   }
 
-  // 🔹 SPIN
+  // SPIN
   static Future<Map<String, dynamic>> spin() async {
     final token = await StorageService.getToken();
 
