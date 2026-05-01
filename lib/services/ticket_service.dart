@@ -1,0 +1,67 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/services/storage_service.dart';
+
+class TicketService {
+  static String get baseUrl => "${ApiConfig.baseUrl}/api";
+
+  /// Get ticket types for a specific event
+  static Future<List<dynamic>> getTicketTypes(String eventId) async {
+    final token = await StorageService.getToken();
+
+    final response = await http.get(
+      Uri.parse("$baseUrl/events/$eventId/ticket-types"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    print("TICKET TYPES STATUS: ${response.statusCode}");
+    print("TICKET TYPES BODY: ${response.body}");
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to load ticket types");
+    }
+  }
+
+  /// Purchase tickets
+  static Future<Map<String, dynamic>> purchase({
+    required String eventId,
+    required String ticketTypeId,
+    required int quantity,
+    String? voucherCode,
+  }) async {
+    final token = await StorageService.getToken();
+
+    final body = {
+      "event_id": eventId,
+      "ticket_type_id": ticketTypeId,
+      "quantity": quantity,
+      if (voucherCode != null) "voucher_code": voucherCode,
+    };
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/tickets/purchase"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(body),
+    );
+
+    print("PURCHASE STATUS: ${response.statusCode}");
+    print("PURCHASE BODY: ${response.body}");
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return data;
+    } else {
+      throw Exception(data["message"] ?? "Purchase failed");
+    }
+  }
+}

@@ -12,17 +12,16 @@ class UserTicketsService {
     final response = await http.get(
       Uri.parse("$baseUrl/mytickets"),
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":  "application/json",
         "Authorization": "Bearer $token",
       },
     );
 
     print("TICKET STATUS: ${response.statusCode}");
-    print("TICKET BODY: ${response.body}");
+    print("TICKET BODY:   ${response.body}");
 
     if (response.statusCode == 200) {
-      final raw = jsonDecode(response.body);
-      return Map<String, dynamic>.from(raw);
+      return Map<String, dynamic>.from(jsonDecode(response.body));
     } else {
       throw Exception("Failed load tickets");
     }
