@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_my_events.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_event_detail.dart';
 import 'package:finalproject/services/eo_event_service.dart';
-import 'package:finalproject/config/api_config.dart';
 
 final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
 
@@ -72,7 +71,6 @@ class _EoHomescreenState extends State<EoHomescreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ── Header ──────────────────────────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -103,7 +101,6 @@ class _EoHomescreenState extends State<EoHomescreen> {
 
                       const SizedBox(height: 20),
 
-                      // ── Stats Cards ──────────────────────────────────────
                       Row(
                         children: [
                           _statCard(
@@ -134,7 +131,6 @@ class _EoHomescreenState extends State<EoHomescreen> {
 
                       const SizedBox(height: 24),
 
-                      // ── Upcoming Events ──────────────────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -165,7 +161,6 @@ class _EoHomescreenState extends State<EoHomescreen> {
 
                       const SizedBox(height: 24),
 
-                      // ── Recent Sales ─────────────────────────────────────
                       const Text("Recent Sales",
                           style: TextStyle(
                               fontSize: 17,

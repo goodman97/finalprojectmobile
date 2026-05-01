@@ -151,7 +151,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               price: "Rp ${event['price'] ?? 0}",
                               image: event['event_image'],
                             );
-                            print(event);
                           },
                         ),
             ),
