@@ -28,4 +28,10 @@ router.get(
   auth.getNotifications
 );
 
+router.put(
+  "/read-notifications",
+  authMiddleware,
+  auth.readNotifications
+);
+
 module.exports = router;

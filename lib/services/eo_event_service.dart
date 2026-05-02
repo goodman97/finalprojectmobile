@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/services/storage_service.dart';
-import 'dart:html' as html;
+import 'package:finalproject/utils/csv_download.dart';
 
 class EoEventService {
   static String get base => "${ApiConfig.baseUrl}/api/events/eo";
@@ -240,22 +241,12 @@ class EoEventService {
     );
 
     print("CSV STATUS: ${response.statusCode}");
-    print("CSV BODY: ${response.body}");
 
     if (response.statusCode == 200) {
-      final bytes = utf8.encode(response.body);
-
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-
-      html.AnchorElement(href: url)
-        ..setAttribute(
-          "download",
-          "analytics_report.csv",
-        )
-        ..click();
-
-      html.Url.revokeObjectUrl(url);
+      await downloadCSV(
+        response.bodyBytes,
+        "analytics_report.csv",
+      );
     } else {
       throw Exception("Gagal download report");
     }

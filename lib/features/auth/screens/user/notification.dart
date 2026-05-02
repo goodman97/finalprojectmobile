@@ -23,6 +23,7 @@ class _NotificationState
   void initState() {
     super.initState();
     loadNotifications();
+    markAllAsRead();
   }
 
   Future<void> loadNotifications() async {
@@ -51,6 +52,23 @@ class _NotificationState
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> markAllAsRead() async {
+    try {
+      final token = await StorageService.getToken();
+
+      await http.put(
+        Uri.parse(
+          "${ApiConfig.baseUrl}/api/auth/read-notifications",
+        ),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
+    } catch (e) {
+      print(e);
     }
   }
 

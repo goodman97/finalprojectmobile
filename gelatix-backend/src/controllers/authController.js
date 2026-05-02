@@ -234,3 +234,27 @@ exports.getNotifications = async (req, res) => {
     });
   }
 };
+
+exports.readNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    await pool.query(
+      `
+      UPDATE notifications
+      SET is_read = true
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    res.json({
+      message: "Notifications marked as read"
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Server error"
+    });
+  }
+};

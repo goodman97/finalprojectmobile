@@ -4,6 +4,9 @@ import 'package:finalproject/services/auth_service.dart';
 import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/notification.dart';
+import 'package:finalproject/services/biometric_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -23,13 +26,15 @@ class _ProfileState extends State<Profile> {
   int notificationCount = 2;
   
   bool isLoading = true;
-  bool locationEnabled = true;
+  bool biometricEnabled = false;
+  bool locationEnabled = false;
   
 
   @override
   void initState() {
     super.initState();
     loadProfile();
+    loadLocationPreference();
   }
 
   Future<void> loadProfile() async {
@@ -68,6 +73,19 @@ class _ProfileState extends State<Profile> {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> loadLocationPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    bool savedStatus =
+        prefs.getBool("location_enabled") ?? false;
+
+    if (!mounted) return;
+
+    setState(() {
+      locationEnabled = savedStatus;
+    });
   }
 
   ImageProvider? getProfileImage() {
@@ -304,21 +322,148 @@ class _ProfileState extends State<Profile> {
                                 value: locationEnabled,
                                 activeColor:
                                     const Color(0xFFE4572E),
-                                onChanged: (value) {
-                                  setState(() {
-                                    locationEnabled = value;
-                                  });
+                                onChanged: (value) async {
+                                  if (value) {
+                                    try {
+                                      bool serviceEnabled =
+                                          await Geolocator
+                                              .isLocationServiceEnabled();
 
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        value
-                                            ? "Nearby events enabled"
-                                            : "Nearby events disabled",
+                                      if (!serviceEnabled) {
+                                        await Geolocator
+                                            .openLocationSettings();
+
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Please enable GPS first",
+                                            ),
+                                          ),
+                                        );
+
+                                        return;
+                                      }
+
+                                      LocationPermission permission =
+                                          await Geolocator.checkPermission();
+
+                                      if (permission ==
+                                          LocationPermission.denied) {
+                                        permission =
+                                            await Geolocator.requestPermission();
+                                      }
+
+                                      if (permission ==
+                                              LocationPermission.denied ||
+                                          permission ==
+                                              LocationPermission.deniedForever) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Location permission denied",
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      final prefs =
+                                        await SharedPreferences.getInstance();
+
+                                        await prefs.setBool(
+                                          "location_enabled",
+                                          true,
+                                        );
+
+                                      setState(() {
+                                        locationEnabled = true;
+                                      });
+
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            "Nearby events enabled",
+                                          ),
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      print(e);
+                                    }
+                                  } else {
+                                    final prefs =
+                                      await SharedPreferences.getInstance();
+
+                                      await prefs.setBool(
+                                        "location_enabled",
+                                        false,
+                                      );
+
+                                    setState(() {
+                                      locationEnabled = false;
+                                    });
+
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Nearby events disabled",
+                                        ),
                                       ),
-                                    ),
-                                  );
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        dividerLine(),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.fingerprint,
+                                color: Color(0xFF2F3E2F),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              const Expanded(
+                                child: Text(
+                                  "Biometric Login",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+
+                              Switch(
+                                value: biometricEnabled,
+                                activeColor: const Color(0xFFE4572E),
+                                onChanged: (value) async {
+                                  if (value) {
+                                    bool success =
+                                        await BiometricService.authenticate();
+
+                                    if (success) {
+                                      setState(() {
+                                        biometricEnabled = true;
+                                      });
+                                    }
+                                  } else {
+                                    setState(() {
+                                      biometricEnabled = false;
+                                    });
+                                  }
                                 },
                               ),
                             ],
