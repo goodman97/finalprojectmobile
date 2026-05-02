@@ -50,25 +50,39 @@ class AuthService {
 
   // LOGIN
   static Future<Map<String, dynamic>> login(
-      String email, String password) async {
+    String email, String password) async {
+
+    print("LOGIN URL: $baseUrl/login");
+
     final response = await http.post(
       Uri.parse("$baseUrl/login"),
-      headers: {"Content-Type": "application/json"},
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: json.encode({
         "email": email,
         "password": password,
       }),
     );
 
+    print("LOGIN STATUS: ${response.statusCode}");
+    print("LOGIN BODY: ${response.body}");
+
     final raw = json.decode(response.body);
     final Map<String, dynamic> data = {};
+
     if (raw is Map) {
-      raw.forEach((k, v) => data[k.toString()] = v);
+      raw.forEach((k, v) {
+        data[k.toString()] = v;
+      });
     }
 
-    if (response.statusCode == 200 && data['token'] != null) {
-      await StorageService.saveToken(data['token'].toString());
+    if (response.statusCode == 200 &&
+        data['token'] != null) {
+      await StorageService.saveToken(
+          data['token'].toString());
     }
+
     return data;
   }
 

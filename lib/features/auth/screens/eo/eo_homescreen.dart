@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_my_events.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_event_detail.dart';
 import 'package:finalproject/services/eo_event_service.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_profile.dart';
 
 final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
 
@@ -93,8 +94,15 @@ class _EoHomescreenState extends State<EoHomescreen> {
                             child: IconButton(
                               icon: const Icon(Icons.person_outline,
                                   color: Color(0xFF2F3E2F)),
-                              onPressed: () {},
-                            ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const EOProfile(),
+                                  ),
+                                );
+                              },
+                                                          ),
                           )
                         ],
                       ),

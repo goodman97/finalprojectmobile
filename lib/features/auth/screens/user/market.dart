@@ -12,6 +12,8 @@ class Market extends StatefulWidget {
 
 class _MarketState extends State<Market> {
   List events = [];
+  List allEvents = [];
+  final TextEditingController searchCtrl = TextEditingController();
   bool isLoading = true;
 
   @override
@@ -24,6 +26,7 @@ class _MarketState extends State<Market> {
     try {
       final data = await MarketService.getEvents();
       setState(() {
+        allEvents = data;
         events = data;
         isLoading = false;
       });
@@ -31,6 +34,156 @@ class _MarketState extends State<Market> {
       print("ERROR MARKET: $e");
       setState(() => isLoading = false);
     }
+  }
+
+  void searchEvents(String keyword) {
+    if (keyword.isEmpty) {
+      setState(() {
+        events = allEvents;
+      });
+      return;
+    }
+
+    final filtered = allEvents.where((event) {
+      final name =
+          (event["name"] ?? "").toString().toLowerCase();
+
+      final address =
+          (event["address"] ?? "").toString().toLowerCase();
+
+      return name.contains(keyword.toLowerCase()) ||
+          address.contains(keyword.toLowerCase());
+    }).toList();
+
+    setState(() {
+      events = filtered;
+    });
+  }
+
+  void showSortOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(25),
+        ),
+      ),
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Sort Events",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              sortTile(
+                "Nearest Date",
+                Icons.calendar_today,
+                () {
+                  Navigator.pop(context);
+
+                  setState(() {
+                    events.sort((a, b) {
+                      final dateA = DateTime.tryParse(
+                            a["date"]?.toString() ?? "",
+                          ) ??
+                          DateTime(2100);
+
+                      final dateB = DateTime.tryParse(
+                            b["date"]?.toString() ?? "",
+                          ) ??
+                          DateTime(2100);
+
+                      return dateA.compareTo(dateB);
+                    });
+                  });
+                },
+              ),
+
+              sortTile(
+                "Farthest Date",
+                Icons.date_range,
+                () {
+                  Navigator.pop(context);
+
+                  setState(() {
+                    events.sort((a, b) {
+                      final dateA = DateTime.tryParse(
+                            a["date"]?.toString() ?? "",
+                          ) ??
+                          DateTime(2100);
+
+                      final dateB = DateTime.tryParse(
+                            b["date"]?.toString() ?? "",
+                          ) ??
+                          DateTime(2100);
+
+                      return dateB.compareTo(dateA);
+                    });
+                  });
+                },
+              ),
+
+              sortTile(
+                "Lowest Price",
+                Icons.arrow_downward,
+                () {
+                  Navigator.pop(context);
+
+                  setState(() {
+                    events.sort((a, b) {
+                      final priceA = int.tryParse(
+                            a["price"].toString(),
+                          ) ??
+                          0;
+
+                      final priceB = int.tryParse(
+                            b["price"].toString(),
+                          ) ??
+                          0;
+
+                      return priceA.compareTo(priceB);
+                    });
+                  });
+                },
+              ),
+
+              sortTile(
+                "Highest Price",
+                Icons.arrow_upward,
+                () {
+                  Navigator.pop(context);
+
+                  setState(() {
+                    events.sort((a, b) {
+                      final priceA = int.tryParse(
+                            a["price"].toString(),
+                          ) ??
+                          0;
+
+                      final priceB = int.tryParse(
+                            b["price"].toString(),
+                          ) ??
+                          0;
+
+                      return priceB.compareTo(priceA);
+                    });
+                  });
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   String formatDate(dynamic date) {
@@ -100,13 +253,15 @@ class _MarketState extends State<Market> {
                             child: IconButton(
                               icon: const Icon(Icons.filter_list,
                                   color: Colors.white),
-                              onPressed: () {},
+                              onPressed: showSortOptions,
                             ),
                           )
                         ],
                       ),
                       const SizedBox(height: 15),
                       TextField(
+                        controller: searchCtrl,
+                        onChanged: searchEvents,
                         decoration: InputDecoration(
                           hintText: "Search events...",
                           filled: true,
@@ -212,6 +367,21 @@ class _MarketState extends State<Market> {
           color: active ? Colors.white : Colors.black,
         ),
       ),
+    );
+  }
+
+  Widget sortTile(
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: const Color(0xFFE4572E),
+      ),
+      title: Text(title),
+      onTap: onTap,
     );
   }
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:finalproject/services/event_service.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/event_detail.dart';
+import 'package:finalproject/features/auth/screens/user/navigation.dart';
+import 'package:finalproject/features/auth/screens/user/notification.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,7 +14,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List events = [];
+  List allEvents = [];
+  final TextEditingController searchCtrl = TextEditingController();
   bool isLoading = true;
+  int notificationCount = 2;
 
   @override
   void initState() {
@@ -27,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print("EVENT DATA: $data");
 
       setState(() {
+        allEvents = data;
         events = data;
         isLoading = false;
       });
@@ -34,6 +40,30 @@ class _HomeScreenState extends State<HomeScreen> {
       print("ERROR GET EVENTS: $e");
       setState(() => isLoading = false);
     }
+  }
+
+  void searchEvents(String keyword) {
+    if (keyword.isEmpty) {
+      setState(() {
+        events = allEvents;
+      });
+      return;
+    }
+
+    final filtered = allEvents.where((event) {
+      final name =
+          (event["name"] ?? "").toString().toLowerCase();
+
+      final address =
+          (event["address"] ?? "").toString().toLowerCase();
+
+      return name.contains(keyword.toLowerCase()) ||
+          address.contains(keyword.toLowerCase());
+    }).toList();
+
+    setState(() {
+      events = filtered;
+    });
   }
 
   @override
@@ -71,9 +101,41 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.notifications_none),
-                        onPressed: () {},
+                      Stack(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.notifications_none,
+                            ),
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const NotificationPage(),
+                                ),
+                              );
+
+                              setState(() {
+                                notificationCount = 0;
+                              });
+                            },
+                          ),
+
+                          if (notificationCount > 0)
+                            Positioned(
+                              right: 10,
+                              top: 10,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            )
+                        ],
                       ),
                     ],
                   ),
@@ -81,6 +143,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
 
                   TextField(
+                    controller: searchCtrl,
+                    onChanged: searchEvents,
                     decoration: InputDecoration(
                       hintText: "Search events...",
                       prefixIcon: const Icon(Icons.search),
@@ -109,6 +173,71 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            GestureDetector(
+              onTap: () {
+                Navigation.setIndex(context, 1);
+              },
+              child: Container(
+                margin: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  bottom: 20,
+                ),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFFE4572E),
+                      Color(0xFFF47C48)
+                    ],
+                  ),
+                  borderRadius:
+                      BorderRadius.circular(25),
+                ),
+                child: Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Nearby Events",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight:
+                                FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "Explore events on the map",
+                          style: TextStyle(
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding:
+                          const EdgeInsets.all(12),
+                      decoration:
+                          const BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.white,
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
 

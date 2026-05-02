@@ -3,6 +3,7 @@ import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:finalproject/services/auth_service.dart';
 import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
 import 'package:finalproject/services/eo_event_service.dart';
+import 'package:finalproject/config/api_config.dart';
 
 class EOProfile extends StatefulWidget {
   const EOProfile({super.key});
@@ -16,6 +17,7 @@ class _EOProfileState extends State<EOProfile> {
   String email = "";
   String role = "";
   String telephone = "";
+  String? profileImage;
   bool isLoading = true;
   int totalEvents = 0;
   int totalTickets = 0;
@@ -37,6 +39,7 @@ class _EOProfileState extends State<EOProfile> {
         email = profileData["email"];
         role = profileData["role"];
         telephone = profileData["telephone"] ?? "-";
+        profileImage = profileData["profile_image"];
 
         totalEvents = int.tryParse(
               dashboardData["stats"]["total_events"].toString(),
@@ -85,7 +88,20 @@ class _EOProfileState extends State<EOProfile> {
                   CircleAvatar(
                     radius: 45,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.work, size: 40, color: Color(0xFF2F3E2F)),
+                    backgroundImage: (profileImage != null &&
+                            profileImage!.isNotEmpty)
+                        ? NetworkImage(
+                            "${ApiConfig.baseUrl}/${profileImage!.replaceAll("\\", "/")}",
+                          )
+                        : null,
+                    child: (profileImage == null ||
+                            profileImage!.isEmpty)
+                        ? const Icon(
+                            Icons.work,
+                            size: 40,
+                            color: Color(0xFF2F3E2F),
+                          )
+                        : null,
                   ),
                   SizedBox(height: 10),
                   Text(name,
@@ -177,7 +193,33 @@ class _EOProfileState extends State<EOProfile> {
             // BUSINESS
             sectionTitle("BUSINESS"),
             sectionCard([
-              menuItem(Icons.bar_chart, "Reports & Analytics"),
+              menuItem(
+                Icons.bar_chart,
+                "Reports & Analytics",
+                onTap: () async {
+                  try {
+                    await EoEventService.downloadCSVReport();
+
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "CSV berhasil didownload",
+                        ),
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "Gagal download CSV: $e",
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
               menuItem(Icons.account_balance_wallet, "Payout Settings"),
             ]),
 

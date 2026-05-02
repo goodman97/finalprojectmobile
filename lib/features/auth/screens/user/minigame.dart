@@ -428,7 +428,7 @@ class _GameScreenState extends State<MiniGame>
                                           onPressed: () {
                                             Navigator.pop(context);
                                             // Navigate to Market tab
-                                            Navigation.setIndex(context, 2);
+                                            Navigation.setIndex(context, 3);
                                           },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/services/storage_service.dart';
+import 'package:finalproject/utils/csv_download.dart';
 
 class EoEventService {
   static String get base => "${ApiConfig.baseUrl}/api/events/eo";
@@ -227,5 +228,27 @@ class EoEventService {
     }
 
     throw Exception(data["message"] ?? "Gagal update event");
+  }
+
+  static Future<void> downloadCSVReport() async {
+    final token = await StorageService.getToken();
+
+    final response = await http.get(
+      Uri.parse("$base/download-report"),
+      headers: {
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    print("CSV STATUS: ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      await downloadCSV(
+        response.bodyBytes,
+        "analytics_report.csv",
+      );
+    } else {
+      throw Exception("Gagal download report");
+    }
   }
 }

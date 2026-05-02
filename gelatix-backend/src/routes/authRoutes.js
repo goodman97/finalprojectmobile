@@ -22,4 +22,16 @@ router.post(
   auth.uploadPhoto
 );
 
+router.get(
+  "/notifications",
+  authMiddleware,
+  auth.getNotifications
+);
+
+router.put(
+  "/read-notifications",
+  authMiddleware,
+  auth.readNotifications
+);
+
 module.exports = router;

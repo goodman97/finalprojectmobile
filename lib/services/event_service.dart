@@ -9,9 +9,7 @@ import 'package:finalproject/services/storage_service.dart';
 class EventService {
   static String get baseUrl => "${ApiConfig.baseUrl}/api/events";
 
-  // =========================
-  // 🔥 GET EVENTS
-  // =========================
+  // GET EVENTS
   static Future<List<dynamic>> getEvents() async {
     final response = await http.get(Uri.parse(baseUrl));
 
@@ -37,9 +35,7 @@ class EventService {
     }
   }
 
-  // =========================
-  // 🔥 CREATE EVENT
-  // =========================
+  // CREATE EVENT
   static Future<Map<String, dynamic>> createEvent({
     required String name,
     required String location,
@@ -70,7 +66,7 @@ class EventService {
     request.fields["price"] = price;
     request.fields["quota"] = quota;
 
-    // 🔥 DEBUG FIELD
+    // DEBUG FIELD
     print("FIELDS: ${request.fields}");
 
     if (kIsWeb && webImage != null) {

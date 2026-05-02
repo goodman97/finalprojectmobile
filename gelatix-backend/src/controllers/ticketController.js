@@ -6,8 +6,13 @@ exports.purchaseTicket = async (req, res) => {
   try {
     await client.query("BEGIN");
 
-    const userId                        = req.user.id;
-    const { ticket_type_id, quantity = 1, voucher_id } = req.body;
+    const userId = req.user.id;
+    const {
+      ticket_type_id,
+      quantity = 1,
+      voucher_id,
+      points_used = 0,
+    } = req.body;
 
     if (!ticket_type_id) {
       return res.status(400).json({ message: "ticket_type_id is required" });
@@ -36,13 +41,40 @@ exports.purchaseTicket = async (req, res) => {
        WHERE ticket_type_id = $1 AND status != 'cancelled'`,
       [ticket_type_id]
     );
-    const sold      = parseInt(soldRes.rows[0].count);
+    const sold = parseInt(soldRes.rows[0].count);
     const available = ticketType.quota - sold;
 
     if (available < quantity) {
       await client.query("ROLLBACK");
       return res.status(400).json({
         message: `Only ${available} ticket(s) left`,
+      });
+    }
+
+    let userPoints = 0;
+
+    const pointRes = await client.query(
+      `SELECT total_points
+      FROM game_users
+      WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (pointRes.rows.length > 0) {
+      userPoints = parseInt(pointRes.rows[0].total_points);
+    }
+
+    if (points_used < 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        message: "Invalid points usage",
+      });
+    }
+
+    if (points_used > userPoints) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({
+        message: "Poin kamu tidak mencukupi",
       });
     }
 
@@ -64,11 +96,27 @@ exports.purchaseTicket = async (req, res) => {
       }
     }
 
-    const basePrice    = parseFloat(ticketType.price);
-    const discount     = (basePrice * discountPercent) / 100;
-    const pricePerUnit = basePrice - discount;
-    const serviceFee   = 5;
-    const totalAmount  = pricePerUnit * quantity + serviceFee;
+    const basePrice = parseFloat(ticketType.price);
+
+    // voucher discount
+    const voucherDiscount = (basePrice * discountPercent) / 100;
+    const afterVoucherPrice = basePrice - voucherDiscount;
+
+    // total sebelum poin
+    const subtotal = afterVoucherPrice * quantity;
+
+    // points = nominal reduction
+    let pointsDiscount = points_used;
+
+    // prevent minus
+    if (pointsDiscount > subtotal) {
+      pointsDiscount = subtotal;
+    }
+
+    const serviceFee = 5;
+    const totalAmount = (subtotal - pointsDiscount) + serviceFee;
+
+    const pricePerUnit = afterVoucherPrice;
 
     // 4. Create tickets + transactions
     const createdTickets = [];
@@ -101,17 +149,27 @@ exports.purchaseTicket = async (req, res) => {
       createdTickets.push({ ticketId, qrCode });
     }
 
+    if (points_used > 0) {
+      await client.query(
+        `UPDATE game_users
+        SET total_points = total_points - $1
+        WHERE user_id = $2`,
+        [points_used, userId]
+      );
+    }
+
     await client.query("COMMIT");
 
     res.status(201).json({
-      message:         "Purchase successful",
-      eventName:       ticketType.event_name,
-      ticketTypeName:  ticketType.name,
+      message: "Purchase successful",
+      eventName: ticketType.event_name,
+      ticketTypeName: ticketType.name,
       quantity,
       discountPercent,
+      pointsUsed: points_used,
       pricePerUnit,
       totalAmount,
-      tickets:         createdTickets,
+      tickets: createdTickets,
     });
 
   } catch (err) {
@@ -128,7 +186,7 @@ exports.buyTicket = async (req, res) => {
   try {
     const { ticketTypeId, price } = req.body;
     const userId = req.user.id;
-    const qr     = "QR-" + Date.now();
+    const qr = "QR-" + Date.now();
 
     const result = await pool.query(
       `SELECT buy_ticket($1, $2, $3, $4) AS ticket_id`,

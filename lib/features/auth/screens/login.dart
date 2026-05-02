@@ -32,19 +32,35 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      final result = await AuthService.login(email, password);
+      print("LOGIN BUTTON CLICKED");
+      print("EMAIL: $email");
+
+      final result =
+          await AuthService.login(email, password);
+
+      print("LOGIN RESULT: $result");
 
       if (result['token'] != null) {
-        await StorageService.saveToken(result['token']);
-        await StorageService.saveRole(result['user']['role']);
+        await StorageService.saveToken(
+            result['token']);
+
+        await StorageService.saveRole(
+            result['user']['role']);
 
         final role = result['user']['role'];
+
         navigateByRole(role);
       } else {
-        showMsg(result['message'] ?? "Login gagal");
+        showMsg(
+          result['message'] ?? "Login gagal",
+        );
       }
     } catch (e) {
-      showMsg("Tidak bisa konek ke server");
+      print("LOGIN ERROR REAL: $e");
+
+      showMsg(
+        "Tidak bisa konek ke server",
+      );
     }
   }
 
