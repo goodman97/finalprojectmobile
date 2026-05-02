@@ -4,6 +4,7 @@ import 'package:finalproject/services/eo_event_service.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_event_detail.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_create_event.dart';
 import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_profile.dart';
 
 final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
 
@@ -59,7 +60,6 @@ class _EoMyEventsState extends State<EoMyEvents> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ─────────────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: const BoxDecoration(
@@ -90,7 +90,14 @@ class _EoMyEventsState extends State<EoMyEvents> {
                         child: IconButton(
                           icon: const Icon(Icons.person_outline,
                               color: Colors.white),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const EOProfile(),
+                              ),
+                            );
+                          },
                         ),
                       )
                     ],
@@ -117,7 +124,6 @@ class _EoMyEventsState extends State<EoMyEvents> {
               ),
             ),
 
-            // ── List ────────────────────────────────────────────────────────
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -146,7 +152,6 @@ class _EoMyEventsState extends State<EoMyEvents> {
         ),
       ),
 
-      // ── FAB create ──────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final created = await Navigator.push<bool>(

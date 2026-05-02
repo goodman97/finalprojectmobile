@@ -6,7 +6,7 @@ import 'package:finalproject/services/storage_service.dart';
 class TicketService {
   static String get baseUrl => "${ApiConfig.baseUrl}/api";
 
-  /// Get ticket types for a specific event
+  /// Get ticket types
   static Future<List<dynamic>> getTicketTypes(String eventId) async {
     final token = await StorageService.getToken();
 
@@ -28,12 +28,13 @@ class TicketService {
     }
   }
 
-  /// Purchase tickets
+  /// Purchase ticket
   static Future<Map<String, dynamic>> purchase({
     required String eventId,
     required String ticketTypeId,
     required int quantity,
     String? voucherCode,
+    int pointsUsed = 0,
   }) async {
     final token = await StorageService.getToken();
 
@@ -41,8 +42,11 @@ class TicketService {
       "event_id": eventId,
       "ticket_type_id": ticketTypeId,
       "quantity": quantity,
-      if (voucherCode != null) "voucher_code": voucherCode,
+      "points_used": pointsUsed,
+      if (voucherCode != null) "voucher_id": voucherCode,
     };
+
+    print("PURCHASE REQUEST BODY: $body");
 
     final response = await http.post(
       Uri.parse("$baseUrl/tickets/purchase"),
@@ -58,10 +62,13 @@ class TicketService {
 
     final data = jsonDecode(response.body);
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    if (response.statusCode == 200 ||
+        response.statusCode == 201) {
       return data;
     } else {
-      throw Exception(data["message"] ?? "Purchase failed");
+      throw Exception(
+        data["message"] ?? "Purchase failed",
+      );
     }
   }
 }

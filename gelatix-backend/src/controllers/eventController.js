@@ -444,3 +444,60 @@ exports.getTicketTypes = async (req, res) => {
     });
   }
 };
+
+exports.downloadAnalyticsCSV = async (req, res) => {
+  try {
+    const organizerId = req.user.id;
+
+    console.log("DOWNLOAD CSV USER:", organizerId);
+
+    const result = await db.query(`
+      SELECT 
+        e.name,
+        e.start_date,
+        e.address,
+        e.price,
+        e.quota,
+        COUNT(t.id) AS tickets_sold,
+        COALESCE(SUM(tr.amount),0) AS revenue
+      FROM events e
+      LEFT JOIN tickets t
+        ON t.event_id = e.id
+      LEFT JOIN transactions tr
+        ON tr.ticket_id = t.id
+        AND tr.status = 'success'
+      WHERE e.organizer_id = $1
+      GROUP BY e.id
+    `, [organizerId]);
+
+    console.log("CSV DATA:", result.rows);
+
+    let csv =
+      "Event Name,Start Date,Location,Price,Quota,Tickets Sold,Revenue\n";
+
+    result.rows.forEach((row) => {
+      csv += `"${row.name}","${row.start_date}",
+      "${row.address}",${row.price},
+      ${row.quota},${row.tickets_sold},
+      ${row.revenue}\n`;
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "text/csv"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=analytics_report.csv"
+    );
+
+    res.status(200).send(csv);
+
+  } catch (err) {
+    console.error("CSV ERROR:", err);
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};

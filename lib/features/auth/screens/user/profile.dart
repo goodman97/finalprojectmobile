@@ -3,6 +3,7 @@ import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:finalproject/services/auth_service.dart';
 import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
 import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/features/auth/screens/user/notification.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -19,8 +20,11 @@ class _ProfileState extends State<Profile> {
   String? profileImage;
   int totalTickets = 0;
   int totalAttended = 0;
-
+  int notificationCount = 2;
+  
   bool isLoading = true;
+  bool locationEnabled = true;
+  
 
   @override
   void initState() {
@@ -198,7 +202,6 @@ class _ProfileState extends State<Profile> {
                       children: [
                         infoTile(Icons.email, "Email", email),
                         infoTile(Icons.phone, "Phone", telephone),
-                        infoTile(Icons.location_on, "Location", "-"),
                       ],
                     ),
                   ),
@@ -206,32 +209,161 @@ class _ProfileState extends State<Profile> {
                   const SizedBox(height: 20),
 
                   /// ACCOUNT
-                  menuSection("Account", [
-                    menuItem(
-                      Icons.person,
-                      "Edit Profile",
-                      onTap: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EditProfile(),
-                          ),
-                        );
-
-                        if (result == true) {
-                          loadProfile();
-                        }
-                      },
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "ACCOUNT",
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1,
+                      ),
                     ),
-                    menuItem(Icons.notifications, "Notifications"),
-                  ]),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Column(
+                      children: [
+
+                        /// EDIT PROFILE
+                        modernMenuItem(
+                          icon: Icons.person,
+                          title: "Edit Profile",
+                          onTap: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const EditProfile(),
+                              ),
+                            );
+
+                            if (result == true) {
+                              loadProfile();
+                            }
+                          },
+                        ),
+
+                        dividerLine(),
+
+                        /// NOTIFICATION
+                        modernMenuItem(
+                          icon: Icons.notifications,
+                          title: "Notifications",
+                          badgeCount: notificationCount > 0
+                            ? notificationCount
+                            : null,
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationPage(),
+                              ),
+                            );
+
+                            setState(() {
+                              notificationCount = 0;
+                            });
+                          },
+                        ),
+
+                        dividerLine(),
+
+                        /// LOCATION SWITCH
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: Color(0xFF2F3E2F),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              const Expanded(
+                                child: Text(
+                                  "Location",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight:
+                                        FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+
+                              Switch(
+                                value: locationEnabled,
+                                activeColor:
+                                    const Color(0xFFE4572E),
+                                onChanged: (value) {
+                                  setState(() {
+                                    locationEnabled = value;
+                                  });
+
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        value
+                                            ? "Nearby events enabled"
+                                            : "Nearby events disabled",
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   const SizedBox(height: 20),
 
                   /// SUPPORT
-                  menuSection("Support", [
-                    menuItem(Icons.help, "Help Center"),
-                  ]),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "SUPPORT",
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: modernMenuItem(
+                      icon: Icons.help,
+                      title: "Help Center",
+                      onTap: () {
+                        /*ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Help Center coming soon",
+                            ),
+                          ),
+                        );*/
+                      },
+                    ),
+                  ),
 
                   const SizedBox(height: 20),
 
@@ -270,7 +402,6 @@ class _ProfileState extends State<Profile> {
   }
 
   /// COMPONENTS
-
   Widget statCard(String value, String label) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -338,6 +469,60 @@ class _ProfileState extends State<Profile> {
       title: Text(title),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+    );
+  }
+
+  Widget modernMenuItem({
+    required IconData icon,
+    required String title,
+    VoidCallback? onTap,
+    int? badgeCount,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: const Color(0xFF2F3E2F),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: badgeCount != null
+          ? Container(
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color:
+                    const Color(0xFFE4572E),
+                borderRadius:
+                    BorderRadius.circular(20),
+              ),
+              child: Text(
+                badgeCount.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight:
+                      FontWeight.bold,
+                ),
+              ),
+            )
+          : const Icon(
+              Icons.chevron_right,
+            ),
+      onTap: onTap,
+    );
+  }
+
+  Widget dividerLine() {
+    return Divider(
+      height: 1,
+      color: Colors.grey.shade300,
     );
   }
 }

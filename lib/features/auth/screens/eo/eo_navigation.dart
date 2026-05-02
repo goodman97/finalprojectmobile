@@ -15,32 +15,76 @@
     int currentIndex = 0;
 
     final screens = [
-      const EoHomescreen(),
+      EoHomescreen(),
       EoMyEvents(),
       OrganizerTickets(),
-      const EOProfile(),
+      EOProfile(),
     ];
 
     @override
     Widget build(BuildContext context) {
       return Scaffold(
         body: screens[currentIndex],
+
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: currentIndex,
           selectedItemColor: const Color(0xFFE4572E),
           unselectedItemColor: Colors.grey,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          elevation: 10,
+
+          selectedLabelStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+
           onTap: (index) {
             setState(() {
               currentIndex = index;
             });
           },
+
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Dashboard"),
-            BottomNavigationBarItem(icon: Icon(Icons.event), label: "My Events"),
-            BottomNavigationBarItem(icon: Icon(Icons.confirmation_number), label: "Tickets"),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+            BottomNavigationBarItem(icon: Icon(Icons.home_outlined),activeIcon: AnimatedNavIcon(icon: Icons.home),label: "Home",),
+            BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined),activeIcon: AnimatedNavIcon(icon: Icons.calendar_today),label: "Events",),
+            BottomNavigationBarItem(icon: Icon(Icons.confirmation_num_outlined),activeIcon: AnimatedNavIcon(icon: Icons.confirmation_num),label: "Tickets",),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline),activeIcon: AnimatedNavIcon(icon: Icons.person),label: "Profile",),
           ],
         ),
       );
     }
   }
+
+  class AnimatedNavIcon extends StatelessWidget {
+  final IconData icon;
+
+  const AnimatedNavIcon({
+    super.key,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: const Offset(0, -6),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE4572E)
+              .withOpacity(0.12),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          color: const Color(0xFFE4572E),
+        ),
+      ),
+    );
+  }
+}
