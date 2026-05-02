@@ -50,7 +50,7 @@ class _MarketState extends State<Market> {
 
   String formatImage(dynamic image) {
     if (image == null || image.toString().isEmpty) return "";
-    return "${ApiConfig.baseUrl}/uploads/${image.toString()}";
+    return "${ApiConfig.baseUrl}/uploads/events/${image.toString()}";
   }
 
   @override

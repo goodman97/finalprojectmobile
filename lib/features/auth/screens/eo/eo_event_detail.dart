@@ -1,0 +1,497 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:finalproject/services/eo_event_service.dart';
+import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_create_event.dart';
+
+final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
+
+class EoEventDetail extends StatefulWidget {
+  final String eventId;
+
+  const EoEventDetail({super.key, required this.eventId});
+
+  @override
+  State<EoEventDetail> createState() => _EoEventDetailState();
+}
+
+class _EoEventDetailState extends State<EoEventDetail> {
+  Map<String, dynamic>? event;
+  List transactions = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final d = await EoEventService.getEventDetail(widget.eventId);
+      setState(() {
+        event        = d["event"];
+        transactions = d["transactions"] ?? [];
+        isLoading    = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      debugPrint("EO DETAIL ERR: $e");
+    }
+  }
+
+  String _fmtDate(dynamic d) {
+    if (d == null) return "-";
+    try { return DateFormat("MMM d, yyyy · HH:mm").format(DateTime.parse(d.toString())); }
+    catch (_) { return "-"; }
+  }
+
+  String _fmtDateShort(dynamic d) {
+    if (d == null) return "-";
+    try { return DateFormat("MMM d, yyyy").format(DateTime.parse(d.toString())); }
+    catch (_) { return "-"; }
+  }
+
+  String _imgUrl(dynamic img) {
+    if (img == null || img.toString().isEmpty) return "";
+    return "${ApiConfig.baseUrl}/uploads/events/${img.toString()}";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (event == null) {
+      return Scaffold(
+        appBar: AppBar(backgroundColor: const Color(0xFF2F3E2F)),
+        body: const Center(child: Text("Event tidak ditemukan")),
+      );
+    }
+
+    final e        = event!;
+    final sold     = int.tryParse(e["sold"]?.toString() ?? "0") ?? 0;
+    final quota    = int.tryParse(e["quota"]?.toString() ?? "0") ?? 1;
+    final revenue  = double.tryParse(e["revenue"]?.toString() ?? "0") ?? 0;
+    final fillPct  = int.tryParse(e["fill_percent"]?.toString() ?? "0") ?? 0;
+    final imgUrl   = _imgUrl(e["event_image"]);
+    final isActive = e["status"] == "active";
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F1E8),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                // ── Hero Image ──────────────────────────────────────────
+                Stack(
+                  children: [
+                    SizedBox(
+                      height: 300,
+                      width: double.infinity,
+                      child: imgUrl.isEmpty
+                          ? Container(
+                              color: const Color(0xFF4E5F4E),
+                              child: const Icon(Icons.image,
+                                  size: 60, color: Colors.white54),
+                            )
+                          : Image.network(
+                              imgUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: const Color(0xFF4E5F4E),
+                                child: const Icon(Icons.image,
+                                    size: 60, color: Colors.white54),
+                              ),
+                            ),
+                    ),
+                    Container(
+                      height: 300,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.transparent, Color(0xFFF5F1E8)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                    // Back button
+                    Positioned(
+                      top: 44,
+                      left: 16,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.arrow_back,
+                              color: Color(0xFF2F3E2F)),
+                        ),
+                      ),
+                    ),
+                    // Status badge
+                    Positioned(
+                      top: 44,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isActive ? Colors.green : Colors.grey,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isActive ? "Active" : "Inactive",
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // ── Content ─────────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Main info card
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 8)
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              e["name"] ?? "-",
+                              style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2F3E2F)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              e["organizer_name"] ?? "-",
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 16),
+                            _infoRow(Icons.calendar_today, "Tanggal",
+                                _fmtDateShort(e["start_date"])),
+                            const SizedBox(height: 8),
+                            _infoRow(Icons.location_on, "Lokasi",
+                                e["address"] ?? "-"),
+                            const SizedBox(height: 8),
+                            _infoRow(Icons.attach_money, "Harga",
+                                _rupiah.format(
+                                    double.tryParse(e["price"]?.toString() ?? "0") ?? 0)),
+                            const SizedBox(height: 16),
+                            const Divider(),
+                            const SizedBox(height: 12),
+                            const Text("Tentang Event",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Color(0xFF2F3E2F))),
+                            const SizedBox(height: 8),
+                            Text(
+                              e["description"] ?? "Tidak ada deskripsi.",
+                              style: const TextStyle(
+                                  color: Colors.black54, height: 1.5),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Stats cards
+                      Row(
+                        children: [
+                          _statsCard("Terjual", "$sold / $quota",
+                              Icons.confirmation_num_outlined,
+                              const Color(0xFFE4572E)),
+                          const SizedBox(width: 10),
+                          _statsCard("Revenue", _rupiah.format(revenue),
+                              Icons.attach_money, const Color(0xFF2F3E2F),
+                              smallText: true),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Fill progress
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 6)
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text("Kapasitas",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF2F3E2F))),
+                                Text("$fillPct%",
+                                    style: TextStyle(
+                                        color: fillPct >= 80
+                                            ? const Color(0xFFE4572E)
+                                            : const Color(0xFF2F3E2F),
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: fillPct / 100,
+                                minHeight: 10,
+                                color: fillPct >= 80
+                                    ? const Color(0xFFE4572E)
+                                    : const Color(0xFF2F3E2F),
+                                backgroundColor: Colors.grey.shade200,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "$sold dari $quota tiket terjual",
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Recent transactions
+                      const Text("Transaksi Terkini",
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2F3E2F))),
+                      const SizedBox(height: 10),
+
+                      transactions.isEmpty
+                          ? Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: const Center(
+                                  child: Text("Belum ada transaksi",
+                                      style:
+                                          TextStyle(color: Colors.grey))),
+                            )
+                          : Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: const [
+                                  BoxShadow(
+                                      color: Colors.black12, blurRadius: 6)
+                                ],
+                              ),
+                              child: Column(
+                                children: transactions
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
+                                  final i = entry.key;
+                                  final tx = entry.value;
+                                  return Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 12),
+                                        child: Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 18,
+                                              backgroundColor:
+                                                  const Color(0xFFF5F1E8),
+                                              child: Text(
+                                                (tx["buyer_name"] ?? "?")
+                                                    .toString()
+                                                    .substring(0, 1)
+                                                    .toUpperCase(),
+                                                style: const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    color:
+                                                        Color(0xFF2F3E2F)),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    tx["buyer_name"] ?? "-",
+                                                    style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Color(
+                                                            0xFF2F3E2F)),
+                                                  ),
+                                                  Text(
+                                                    _fmtDate(tx["created_at"]),
+                                                    style: const TextStyle(
+                                                        color: Colors.grey,
+                                                        fontSize: 11),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(
+                                              _rupiah.format(double.tryParse(
+                                                      tx["amount"]?.toString() ??
+                                                          "0") ??
+                                                  0),
+                                              style: const TextStyle(
+                                                  color: Color(0xFFE4572E),
+                                                  fontWeight:
+                                                      FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (i < transactions.length - 1)
+                                        const Divider(height: 1, indent: 54),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Edit button sticky bottom
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 20,
+            child: SizedBox(
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final updated = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EoCreateEvent(
+                          editEvent: Map<String, dynamic>.from(event!)),
+                    ),
+                  );
+                  if (updated == true) _load();
+                },
+                icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                label: const Text("Edit Event",
+                    style: TextStyle(color: Colors.white, fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2F3E2F),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F1E8),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 16, color: const Color(0xFF2F3E2F)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style:
+                      const TextStyle(color: Colors.grey, fontSize: 11)),
+              Text(value,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2F3E2F))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statsCard(
+      String label, String value, IconData icon, Color color,
+      {bool smallText = false}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 6)
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                  fontSize: smallText ? 13 : 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF2F3E2F)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(label,
+                style: const TextStyle(color: Colors.grey, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+}

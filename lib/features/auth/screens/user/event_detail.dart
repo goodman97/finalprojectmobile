@@ -25,7 +25,7 @@ class EventDetail extends StatelessWidget {
     if (image == null || image.toString().isEmpty) return "";
     final img = image.toString();
     if (img.startsWith("http")) return img;
-    return "${ApiConfig.baseUrl}/uploads/$img";
+    return "${ApiConfig.baseUrl}/uploads/events/$img";
   }
 
   @override
