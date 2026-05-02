@@ -61,6 +61,9 @@ Semua fitur utama saat ini stabil:
 - points
 - notifications
 - organizer report
-- nearby events
 - location persistence
 - map popup
+
+Yang belum stabil:
+- nearby events (lokasinya di Bandung cik jauh betul)
+- biometric
