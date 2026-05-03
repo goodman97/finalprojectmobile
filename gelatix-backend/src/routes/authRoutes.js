@@ -34,4 +34,15 @@ router.put(
   auth.readNotifications
 );
 
+router.put(
+  "/biometric",
+  authMiddleware,
+  auth.updateBiometric
+);
+
+router.post(
+  "/biometric-login",
+  auth.biometricLogin
+);
+
 module.exports = router;

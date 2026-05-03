@@ -66,48 +66,50 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // LOGIN BIOMETRIC
   void loginWithBiometric() async {
-    String? token = await StorageService.getToken();
     bool biometricEnabled =
         await StorageService.getBiometric();
 
-    print("TOKEN BIOMETRIC: $token");
-    print("BIOMETRIC STATUS: $biometricEnabled");
-
     if (!biometricEnabled) {
-      showMsg("Biometric belum diaktifkan");
-      return;
-    }
-
-    if (token == null || token.isEmpty) {
-      showMsg("Silakan login manual terlebih dahulu");
-      return;
-    }
-
-    bool isExpired = JwtHelper.isExpired(token);
-
-    if (isExpired) {
-      showMsg("Session expired, silakan login ulang");
-      await StorageService.clear();
+      showMsg(
+        "Biometric belum diaktifkan",
+      );
       return;
     }
 
     bool success =
         await BiometricService.authenticate();
 
-    if (success) {
-      String? role =
-          await StorageService.getRole();
-
-      print("ROLE BIOMETRIC: $role");
-
-      if (role == null) {
-        showMsg("Role tidak ditemukan");
-        return;
-      }
-
-      navigateByRole(role);
-    } else {
+    if (!success) {
       showMsg("Fingerprint gagal");
+      return;
+    }
+
+    try {
+      final result =
+          await AuthService
+              .biometricLogin();
+
+      if (result["token"] != null) {
+        await StorageService.saveToken(
+          result["token"],
+        );
+
+        await StorageService.saveRole(
+          result["user"]["role"],
+        );
+
+        navigateByRole(
+          result["user"]["role"],
+        );
+      } else {
+        showMsg(
+          result["message"] ??
+              "Biometric login gagal",
+        );
+      }
+    } catch (e) {
+      print(e);
+      showMsg("Server error");
     }
   }
 

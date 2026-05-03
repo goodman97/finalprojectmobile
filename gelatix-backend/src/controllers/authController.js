@@ -89,6 +89,7 @@ exports.getProfile = async (req, res) => {
         role, 
         telephone, 
         profile_image,
+        biometric_enabled,
         TO_CHAR(created_at, 'DD Mon YYYY') AS created_at
       FROM users 
       WHERE id = $1`,
@@ -123,6 +124,7 @@ exports.getProfile = async (req, res) => {
       role: userResult.rows[0].role,
       telephone: userResult.rows[0].telephone,
       profile_image: userResult.rows[0].profile_image,
+      biometric_enabled: userResult.rows[0].biometric_enabled,
       created_at: userResult.rows[0].created_at,
 
       total_tickets: ticketResult.rows[0].total_tickets,
@@ -251,6 +253,66 @@ exports.readNotifications = async (req, res) => {
     res.json({
       message: "Notifications marked as read"
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Server error"
+    });
+  }
+};
+
+exports.updateBiometric = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { enabled } = req.body;
+
+    await pool.query(
+      `
+      UPDATE users
+      SET biometric_enabled = $1
+      WHERE id = $2
+      `,
+      [enabled, userId]
+    );
+
+    res.json({
+      message: "Biometric updated successfully"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Server error"
+    });
+  }
+};
+
+exports.biometricLogin = async (req, res) => {
+  try {
+    const user = await pool.query(
+      `
+      SELECT * FROM users
+      WHERE biometric_enabled = true
+      LIMIT 1
+      `
+    );
+
+    if (user.rows.length === 0) {
+      return res.status(400).json({
+        message: "No biometric account found"
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user.rows[0].id },
+      process.env.JWT_SECRET
+    );
+
+    res.json({
+      token,
+      user: user.rows[0]
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({
