@@ -67,34 +67,38 @@ class _LoginScreenState extends State<LoginScreen> {
   // LOGIN BIOMETRIC
   void loginWithBiometric() async {
     String? token = await StorageService.getToken();
+    bool biometricEnabled =
+        await StorageService.getBiometric();
 
-    bool biometricEnabled = await StorageService.getBiometric();
+    print("TOKEN BIOMETRIC: $token");
+    print("BIOMETRIC STATUS: $biometricEnabled");
 
     if (!biometricEnabled) {
       showMsg("Biometric belum diaktifkan");
       return;
     }
 
-    if (token == null) {
-      showMsg("Silakan login dulu sekali");
+    if (token == null || token.isEmpty) {
+      showMsg("Silakan login manual terlebih dahulu");
       return;
     }
 
-    // CEK TOKEN EXPIRED
     bool isExpired = JwtHelper.isExpired(token);
 
     if (isExpired) {
       showMsg("Session expired, silakan login ulang");
-
-      await StorageService.clear(); // hapus token
+      await StorageService.clear();
       return;
     }
 
-    // BIOMETRIC
-    bool success = await BiometricService.authenticate();
+    bool success =
+        await BiometricService.authenticate();
 
     if (success) {
-      String? role = await StorageService.getRole();
+      String? role =
+          await StorageService.getRole();
+
+      print("ROLE BIOMETRIC: $role");
 
       if (role == null) {
         showMsg("Role tidak ditemukan");

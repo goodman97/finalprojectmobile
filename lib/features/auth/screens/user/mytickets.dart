@@ -47,7 +47,7 @@ class _MyTicketsState extends State<MyTickets> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  // ================= HEADER =================
+                  // HEADER
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
@@ -81,7 +81,7 @@ class _MyTicketsState extends State<MyTickets> {
                           child: IconButton(
                             icon: const Icon(Icons.add, color: Colors.white),
                             onPressed: () {
-                              Navigation.setIndex(context, 2);
+                              Navigation.setIndex(context, 3);
                             },
                           ),
                         )
@@ -89,7 +89,7 @@ class _MyTicketsState extends State<MyTickets> {
                     ),
                   ),
 
-                  // ================= CONTENT =================
+                  // CONTENT
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.only(top: 16),
@@ -97,7 +97,7 @@ class _MyTicketsState extends State<MyTickets> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
 
-                          // 🔥 UPCOMING TITLE (MENTOK KIRI)
+                          // UPCOMING TITLE
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
@@ -117,7 +117,7 @@ class _MyTicketsState extends State<MyTickets> {
                               child: Text("No active tickets"),
                             ),
 
-                          // 🔥 CARD
+                          // CARD
                           ...upcoming.map((item) => Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                 child: ticketCard(
@@ -131,7 +131,7 @@ class _MyTicketsState extends State<MyTickets> {
 
                           const SizedBox(height: 20),
 
-                          // 🔥 PAST TITLE (MENTOK KIRI)
+                          // PAST TITLE (MENTOK KIRI)
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 16),
                             child: Text(

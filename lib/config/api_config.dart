@@ -5,7 +5,7 @@ class ApiConfig {
     if (kIsWeb) {
       return "http://localhost:5000";
     } else {
-      return "http://192.168.18.18:5000";
+      return "http://192.168.0.101:5000";
     }
   }
 }

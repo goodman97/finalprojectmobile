@@ -5,6 +5,7 @@ import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/notification.dart';
 import 'package:finalproject/services/biometric_service.dart';
+import 'package:finalproject/services/storage_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,6 +36,7 @@ class _ProfileState extends State<Profile> {
     super.initState();
     loadProfile();
     loadLocationPreference();
+    loadBiometricPreference();
   }
 
   Future<void> loadProfile() async {
@@ -73,6 +75,17 @@ class _ProfileState extends State<Profile> {
         isLoading = false;
       });
     }
+  }
+
+  Future<void> loadBiometricPreference() async {
+    bool savedStatus =
+        await StorageService.getBiometric();
+
+    if (!mounted) return;
+
+    setState(() {
+      biometricEnabled = savedStatus;
+    });
   }
 
   Future<void> loadLocationPreference() async {
@@ -455,14 +468,29 @@ class _ProfileState extends State<Profile> {
                                         await BiometricService.authenticate();
 
                                     if (success) {
+                                      await StorageService.setBiometric(true);
+
                                       setState(() {
                                         biometricEnabled = true;
                                       });
+
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Biometric enabled"),
+                                        ),
+                                      );
                                     }
                                   } else {
-                                    setState(() {
-                                      biometricEnabled = false;
-                                    });
+                                      await StorageService.setBiometric(false);
+
+                                      setState(() {
+                                        biometricEnabled = false;
+                                      });
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Biometric disabled"),
+                                      ),
+                                    );
                                   }
                                 },
                               ),
