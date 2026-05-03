@@ -20,7 +20,7 @@ class _UserMapScreenState
     extends State<UserMapScreen> {
   List events = [];
   LatLng userLocation =
-      const LatLng(-6.2, 106.8);
+      const LatLng(0, 0);
 
   bool isLoading = true;
   bool locationEnabled = false;
@@ -58,9 +58,7 @@ class _UserMapScreenState
     }
 
     // cek GPS device
-    bool gpsEnabled =
-        await Geolocator
-            .isLocationServiceEnabled();
+    bool gpsEnabled = await Geolocator.isLocationServiceEnabled();
 
     print("GPS STATUS: $gpsEnabled");
 
@@ -100,21 +98,32 @@ class _UserMapScreenState
       LatLng currentLocation;
 
       if (location == null) {
-        print("LOCATION NULL -> fallback");
+        print("LOCATION NOT FOUND");
 
-        currentLocation = const LatLng(
-          -6.9175,
-          107.6191,
+        if (!mounted) return;
+
+        setState(() {
+          isLoading = false;
+          events = [];
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Location not found. Please enable GPS and location permission.",
+            ),
+          ),
         );
-      } else {
-        currentLocation = LatLng(
-          location.latitude,
-          location.longitude,
-        );
+
+        return;
       }
 
-      final eventData =
-          await EventService.getEvents();
+      currentLocation = LatLng(
+        location.latitude,
+        location.longitude,
+      );
+
+      final eventData = await EventService.getEvents();
 
       print(
           "EVENT COUNT: ${eventData.length}");
@@ -137,19 +146,24 @@ class _UserMapScreenState
         events = validEvents;
         isLoading = false;
       });
-    } on TimeoutException {
-      print("GPS TIMEOUT");
+    }on TimeoutException {
+        print("GPS TIMEOUT");
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      setState(() {
-        userLocation = const LatLng(
-          -6.9175,
-          107.6191,
+        setState(() {
+          isLoading = false;
+          events = [];
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "GPS timeout. Please try again.",
+            ),
+          ),
         );
-        isLoading = false;
-      });
-    } catch (e) {
+      } catch (e) {
       print("MAP ERROR: $e");
 
       if (!mounted) return;
@@ -179,19 +193,53 @@ class _UserMapScreenState
   }
 
   String getEstimatedTime(Map event) {
-    final km =
-        getDistanceKm(event);
+    final distanceKm = getDistanceKm(event);
 
-    final minutes =
-        ((km / 30) * 60)
-            .round();
+    // asumsi kecepatan rata-rata kendaraan 40 km/jam
+    final timeInHours = distanceKm / 40;
 
-    if (minutes < 1) {
-      return "<1 min";
+    final totalMinutes = (timeInHours * 60).round();
+
+    if (totalMinutes < 60) {
+      return "$totalMinutes mins";
+    } else {
+      final hours = totalMinutes ~/ 60;
+      final minutes = totalMinutes % 60;
+
+      if (minutes == 0) {
+        return "$hours hr";
+      }
+
+      return "$hours hr $minutes mins";
     }
-
-    return "$minutes mins";
   }
+
+  String formatDate(dynamic date) {
+  if (date == null) return "-";
+
+  try {
+    final d = DateTime.parse(date.toString());
+
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ];
+
+    return "${months[d.month - 1]} ${d.day}, ${d.year}";
+  } catch (e) {
+    return "-";
+  }
+}
 
   @override
   Widget build(
@@ -365,85 +413,113 @@ class _UserMapScreenState
                     ),
                   ),
 
-                  const SizedBox(
-                      height:
-                          20),
+                  const SizedBox(height:20),
 
                   Expanded(
-                    child:
-                        ListView.builder(
-                      itemCount:
-                          events.length,
-                      itemBuilder:
-                          (_, i) {
-                        final event =
-                            events[i];
+                    child: ListView.builder(
+                      itemCount: events.length,
+                      itemBuilder: (context, index) {
+                        final event = events[index];
 
                         return GestureDetector(
-                          onTap:
-                              () {
+                          onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (_) =>
-                                        EventDetail(
-                                  event: Map<String,
-                                      dynamic>.from(
-                                    event,
-                                  ),
+                                builder: (_) => EventDetail(
+                                  event: Map<String, dynamic>.from(event),
                                 ),
                               ),
                             );
                           },
-                          child:
-                              Container(
-                            margin:
-                                const EdgeInsets.only(
-                                    bottom:
-                                        14),
-                            padding:
-                                const EdgeInsets.all(
-                                    16),
-                            decoration:
-                                BoxDecoration(
-                              color:
-                                  const Color(
-                                      0xFFF5F1E8),
-                              borderRadius:
-                                  BorderRadius.circular(
-                                      20),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4F1EA),
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            child:
-                                Row(
+                            child: Row(
                               children: [
                                 Expanded(
-                                  child:
-                                      Column(
+                                  child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        event["name"] ??
-                                            "-",
+                                        event["name"] ?? "-",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
+
+                                      const SizedBox(height: 6),
+
                                       Text(
-                                        event["address"] ??
-                                            "-",
+                                        formatDate(
+                                          event["start_date"] ??
+                                              event["date"],
+                                        ),
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 10),
+
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.near_me,
+                                            size: 16,
+                                            color: Colors.orange,
+                                          ),
+                                          const SizedBox(width: 4),
+
+                                          Text(
+                                            "${getDistanceKm(event).toStringAsFixed(1)} km",
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+
+                                          const SizedBox(width: 16),
+
+                                          const Icon(
+                                            Icons.access_time,
+                                            size: 16,
+                                            color: Colors.orange,
+                                          ),
+                                          const SizedBox(width: 4),
+
+                                          Text(
+                                            getEstimatedTime(event),
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
+
                                 Text(
-                                  "Rp ${event["price"]}",
-                                )
+                                  "\$${event["price"] ?? 0}",
+                                  style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         );
                       },
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
