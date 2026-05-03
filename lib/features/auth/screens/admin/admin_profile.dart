@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/features/auth/screens/login.dart';
 import 'package:finalproject/services/auth_service.dart';
+import 'package:finalproject/features/auth/screens/admin/rating_page.dart';
 
 class AdminProfile extends StatefulWidget {
   const AdminProfile({super.key});
@@ -117,6 +118,25 @@ class _AdminProfileState extends State<AdminProfile> {
 
             const SizedBox(height: 20),
 
+            // RATING
+            sectionTitle("RATING"),
+            sectionCard([
+              menuItem(
+                Icons.star,
+                "Impressions and Suggestions for TPM",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RatingPage(),
+                    ),
+                  );
+                },
+              ),
+            ]),
+
+            const SizedBox(height: 20),
+
             // LOGOUT
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -210,32 +230,55 @@ Widget sectionCard(List<Widget> children) {
   );
 }
 
-Widget menuItem(IconData icon, String title, {String? badge}) {
+Widget menuItem(
+  IconData icon,
+  String title, {
+  String? badge,
+  VoidCallback? onTap,
+}) {
   return Column(
     children: [
       ListTile(
-        leading: Icon(icon, color: const Color(0xFF2F3E2F)),
-        title: Text(title),
+        onTap: onTap,
+        leading: Icon(
+          icon,
+          color: const Color(0xFF2F3E2F),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (badge != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE4572E),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   badge,
-                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                  ),
                 ),
               ),
+
             const SizedBox(width: 5),
+
             const Icon(Icons.chevron_right),
           ],
         ),
       ),
+
       const Divider(height: 1),
     ],
   );

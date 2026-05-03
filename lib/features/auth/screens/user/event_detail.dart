@@ -156,7 +156,7 @@ class EventDetail extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  "\$$price",
+                                  "\rp$price",
                                   style: const TextStyle(
                                     fontSize: 26,
                                     fontWeight: FontWeight.bold,

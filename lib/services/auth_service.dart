@@ -105,8 +105,7 @@ class AuthService {
   }
 
   // UPDATE PROFILE
-  static Future<Map<String, dynamic>> updateProfile(
-      String name, String email, String phone) async {
+  static Future<Map<String, dynamic>> updateProfile(String name, String email, String phone) async {
     final token = await StorageService.getToken();
     final response = await http.put(
       Uri.parse("$baseUrl/profile"),
@@ -159,8 +158,7 @@ class AuthService {
   }
 
   // CHANGE PASSWORD
-  static Future<Map<String, dynamic>> changePassword(
-      String oldPass, String newPass) async {
+  static Future<Map<String, dynamic>> changePassword(String oldPass, String newPass) async {
     final token = await StorageService.getToken();
     final response = await http.put(
       Uri.parse("$baseUrl/change-password"),
@@ -176,6 +174,50 @@ class AuthService {
     final raw = json.decode(response.body);
     final Map<String, dynamic> data = {};
     if (raw is Map) raw.forEach((k, v) => data[k.toString()] = v);
+    return data;
+  }
+
+  static Future<void> updateBiometric(bool enabled) async {
+    final token =
+        await StorageService.getToken();
+
+    await http.put(
+      Uri.parse("$baseUrl/biometric"),
+      headers: {
+        "Content-Type":
+            "application/json",
+        "Authorization":
+            "Bearer $token",
+      },
+      body: json.encode({
+        "enabled": enabled,
+      }),
+    );
+  }
+
+  static Future<Map<String, dynamic>> biometricLogin() async {
+    final response = await http.post(
+      Uri.parse(
+        "$baseUrl/biometric-login",
+      ),
+      headers: {
+        "Content-Type":
+            "application/json"
+      },
+    );
+
+    final raw =
+        json.decode(response.body);
+
+    final Map<String, dynamic>
+        data = {};
+
+    if (raw is Map) {
+      raw.forEach((k, v) {
+        data[k.toString()] = v;
+      });
+    }
+
     return data;
   }
 }
