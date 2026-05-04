@@ -38,7 +38,7 @@ exports.purchaseTicket = async (req, res) => {
     // 2. Check availability
     const soldRes = await client.query(
       `SELECT COUNT(*) FROM tickets
-       WHERE ticket_type_id = $1 AND status != 'cancelled'`,
+       WHERE ticket_type_id = $1 AND status IN ('active', 'used', 'resale')`,
       [ticket_type_id]
     );
     const sold = parseInt(soldRes.rows[0].count);
@@ -135,7 +135,7 @@ exports.purchaseTicket = async (req, res) => {
       await client.query(
         `INSERT INTO transactions
            (user_id, ticket_id, amount, status)
-         VALUES ($1, $2, $3, 'completed')`,
+         VALUES ($1, $2, $3, 'success')`,
         [userId, ticketId, pricePerUnit + (i === 0 ? serviceFee : 0)]
       );
 
@@ -157,6 +157,14 @@ exports.purchaseTicket = async (req, res) => {
         [points_used, userId]
       );
     }
+
+    // Tambah 1 spin sebagai reward setelah purchase
+    await client.query(
+      `UPDATE game_users
+       SET total_spins = total_spins + 1
+       WHERE user_id = $1`,
+      [userId]
+    );
 
     await client.query("COMMIT");
 
@@ -254,11 +262,8 @@ exports.scanTicket = async (req, res) => {
       [qr]
     );
 
-    await pool.query(
-      `INSERT INTO ticket_history (ticket_id, owner_id, transfer_type)
-       VALUES ($1, $2, 'scan')`,
-      [ticket.id, ticket.current_owner_id]
-    );
+    // ticket_history hanya support 'purchase' dan 'resale' — skip insert 'scan'
+    // Status tiket sudah di-update ke 'used' di atas
 
     return res.json({ status: "valid", ticket });
   } catch (err) {
@@ -281,7 +286,13 @@ exports.getMyTickets = async (req, res) => {
          e.name  AS event_name,
          e.start_date AS event_date,
          e.address AS location,
-         e.event_image AS image
+         CASE
+           WHEN e.event_image IS NULL THEN NULL
+           WHEN e.event_image LIKE 'http%' THEN e.event_image
+           WHEN e.event_image LIKE 'uploads/%' THEN '/' || e.event_image
+           WHEN e.event_image LIKE '/uploads/%' THEN e.event_image
+           ELSE '/uploads/events/' || e.event_image
+         END AS image
        FROM tickets t
        JOIN ticket_types tt ON tt.id = t.ticket_type_id
        JOIN events e ON e.id = t.event_id

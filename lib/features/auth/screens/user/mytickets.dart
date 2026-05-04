@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:finalproject/services/user_tickets_service.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/navigation.dart';
+import 'package:finalproject/features/auth/screens/user/ticket_detail.dart';
 
 class MyTickets extends StatefulWidget {
   const MyTickets({super.key});
@@ -91,78 +92,107 @@ class _MyTicketsState extends State<MyTickets> {
 
                   // CONTENT
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(top: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                    child: RefreshIndicator(
+                      onRefresh: loadTickets,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
 
-                          // UPCOMING TITLE
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              "Upcoming",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          if (upcoming.isEmpty)
+                            // UPCOMING
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Text("No active tickets"),
-                            ),
-
-                          // CARD
-                          ...upcoming.map((item) => Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: ticketCard(
-                                  title: item["event_name"] ?? "",
-                                  type: item["ticket_type"] ?? "",
-                                  date: formatDate(item["event_date"]),
-                                  location: item["location"] ?? "",
-                                  image: item["image"],
+                              child: Text(
+                                "Upcoming",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              )),
-
-                          const SizedBox(height: 20),
-
-                          // PAST TITLE (MENTOK KIRI)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              "Past Events",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
 
-                          const SizedBox(height: 10),
+                            const SizedBox(height: 10),
 
-                          if (past.isEmpty)
+                            if (upcoming.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: Text("No active tickets"),
+                              ),
+
+                            ...upcoming.map((item) => GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TicketDetail(
+                                          ticket: Map<String, dynamic>.from(item),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16),
+                                    child: ticketCard(
+                                      title: item["event_name"] ?? "",
+                                      type: item["ticket_type"] ?? "",
+                                      date: formatDate(item["event_date"]),
+                                      location: item["location"] ?? "",
+                                      image: item["image"],
+                                    ),
+                                  ),
+                                )),
+
+                            const SizedBox(height: 20),
+
+                            // PAST
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Text("No past tickets"),
+                              child: Text(
+                                "Past Events",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
 
-                          ...past.map((item) => Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: pastTicketCard(
-                                  title: item["event_name"] ?? "",
-                                  type: item["ticket_type"] ?? "",
-                                  date: formatDate(item["event_date"]),
-                                  image: item["image"],
-                                ),
-                              )),
+                            const SizedBox(height: 10),
 
-                          const SizedBox(height: 20),
-                        ],
+                            if (past.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: Text("No past tickets"),
+                              ),
+
+                            ...past.map((item) => GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TicketDetail(
+                                          ticket: Map<String, dynamic>.from(item),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16),
+                                    child: pastTicketCard(
+                                      title: item["event_name"] ?? "",
+                                      type: item["ticket_type"] ?? "",
+                                      date: formatDate(item["event_date"]),
+                                      image: item["image"],
+                                    ),
+                                  ),
+                                )),
+
+                            const SizedBox(height: 20),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -174,15 +204,32 @@ class _MyTicketsState extends State<MyTickets> {
 
   String formatDate(String? date) {
     if (date == null) return "";
-    final d = DateTime.parse(date);
+    final d = DateTime.tryParse(date);
+    if (d == null) return date;
     return "${d.day}/${d.month}/${d.year}";
   }
 
+  /// Bangun URL gambar dari path yang dikembalikan backend.
+  /// DB lama: hanya filename (1234.jpg)
+  /// DB baru: path relatif (uploads/events/1234.jpg atau /uploads/events/1234.jpg)
   ImageProvider getImage(String? image) {
     if (image == null || image.isEmpty) {
       return const AssetImage("assets/images/placeholder.jpg");
     }
-    return NetworkImage("${ApiConfig.baseUrl}$image");
+
+    final base = ApiConfig.baseUrl;
+
+    // Sudah URL penuh
+    if (image.startsWith('http')) return NetworkImage(image);
+
+    // Sudah ada leading slash → langsung concat
+    if (image.startsWith('/uploads/')) return NetworkImage('$base$image');
+
+    // Path relatif tanpa leading slash (uploads/events/...)
+    if (image.startsWith('uploads/')) return NetworkImage('$base/$image');
+
+    // Hanya filename — coba di folder events dulu
+    return NetworkImage('$base/uploads/events/$image');
   }
 
   Widget ticketCard({
@@ -211,6 +258,13 @@ class _MyTicketsState extends State<MyTickets> {
               width: 80,
               height: 80,
               fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.image_not_supported,
+                    color: Colors.grey),
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -218,8 +272,11 @@ class _MyTicketsState extends State<MyTickets> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(type, style: const TextStyle(color: Colors.black54)),
+                Text(title,
+                    style:
+                        const TextStyle(fontWeight: FontWeight.bold)),
+                Text(type,
+                    style: const TextStyle(color: Colors.black54)),
                 const SizedBox(height: 6),
                 Row(
                   children: [
@@ -232,7 +289,12 @@ class _MyTicketsState extends State<MyTickets> {
                   children: [
                     const Icon(Icons.location_on, size: 14),
                     const SizedBox(width: 4),
-                    Text(location),
+                    Expanded(
+                      child: Text(
+                        location,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -240,7 +302,7 @@ class _MyTicketsState extends State<MyTickets> {
           ),
           Column(
             children: [
-              const Icon(Icons.more_vert),
+              const Icon(Icons.chevron_right, color: Colors.grey),
               const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -248,7 +310,8 @@ class _MyTicketsState extends State<MyTickets> {
                   color: const Color(0xFFF5E6E0),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.qr_code, color: Color(0xFFE4572E)),
+                child:
+                    const Icon(Icons.qr_code, color: Color(0xFFE4572E)),
               ),
             ],
           )
@@ -281,6 +344,13 @@ class _MyTicketsState extends State<MyTickets> {
               fit: BoxFit.cover,
               color: Colors.grey,
               colorBlendMode: BlendMode.saturation,
+              errorBuilder: (_, __, ___) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.image_not_supported,
+                    color: Colors.grey),
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -288,8 +358,11 @@ class _MyTicketsState extends State<MyTickets> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(type, style: const TextStyle(color: Colors.black54)),
+                Text(title,
+                    style:
+                        const TextStyle(fontWeight: FontWeight.bold)),
+                Text(type,
+                    style: const TextStyle(color: Colors.black54)),
                 const SizedBox(height: 6),
                 Row(
                   children: [
@@ -302,7 +375,8 @@ class _MyTicketsState extends State<MyTickets> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.grey.shade400,
               borderRadius: BorderRadius.circular(20),

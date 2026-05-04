@@ -4,14 +4,16 @@ const ticketController = require("../controllers/ticketController");
 const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 
-router.post("/purchase", auth, role(["user"]), ticketController.purchaseTicket);
+// Semua role bisa purchase, buy, transfer, dan lihat tiket sendiri
+router.post("/purchase", auth, role(["user", "organizer", "admin"]), ticketController.purchaseTicket);
 
-router.post("/buy", auth, role(["user"]), ticketController.buyTicket);
+router.post("/buy", auth, role(["user", "organizer", "admin"]), ticketController.buyTicket);
 
-router.post("/transfer", auth, role(["user"]), ticketController.transferTicket);
+router.post("/transfer", auth, role(["user", "organizer", "admin"]), ticketController.transferTicket);
 
-router.post("/scan", auth, role(["eo", "admin"]), ticketController.scanTicket);
+// Scan hanya untuk organizer (eo) dan admin
+router.post("/scan", auth, role(["organizer", "eo", "admin"]), ticketController.scanTicket);
 
-router.get("/mytickets", auth, role(["user"]), ticketController.getMyTickets);
+router.get("/mytickets", auth, role(["user", "organizer", "admin"]), ticketController.getMyTickets);
 
 module.exports = router;
