@@ -1,45 +1,47 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:http/http.dart' as http;
- 
+
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/services/storage_service.dart';
 import 'package:finalproject/services/ticket_service.dart';
- 
+
 class TicketPurchase extends StatefulWidget {
   final Map<String, dynamic> event;
- 
+
   const TicketPurchase({
     super.key,
     required this.event,
   });
- 
+
   @override
   State<TicketPurchase> createState() =>
       _TicketPurchaseState();
 }
- 
+
 class _TicketPurchaseState
     extends State<TicketPurchase> {
   List ticketTypes = [];
   List vouchers = [];
- 
+
   bool isLoading = true;
   bool isProcessing = false;
- 
+
   String? selectedTypeId;
   String? appliedVoucherCode;
- 
+
   int quantity = 1;
   int discountPercent = 0;
   int userPoints = 0;
   int pointsUsed = 0;
- 
+
   // ── Currency Conversion ──────────────────────────
   static const String _exchangeApiKey = 'cc924ed5bb5159482cfc6dca';
   static const String _exchangeBaseUrl =
       'https://v6.exchangerate-api.com/v6/$_exchangeApiKey';
- 
+
   /// Supported currencies: code → display label
   static const Map<String, String> _currencies = {
     'IDR': '🇮🇩 IDR – Rupiah',
@@ -52,20 +54,20 @@ class _TicketPurchaseState
     'AUD': '🇦🇺 AUD – Australian Dollar',
     'KRW': '🇰🇷 KRW – Korean Won',
   };
- 
+
   String _selectedCurrency = 'IDR';
   double _exchangeRate = 1.0;      // IDR → selectedCurrency
   bool _isLoadingRate = false;
   String? _rateError;
   // ────────────────────────────────────────────────
- 
+
   @override
   void initState() {
     super.initState();
     loadTicketTypes();
     loadUserPoints();
   }
- 
+
   // ── Currency helpers ─────────────────────────────
   Future<void> _fetchExchangeRate(String targetCurrency) async {
     if (targetCurrency == 'IDR') {
@@ -76,22 +78,22 @@ class _TicketPurchaseState
       });
       return;
     }
- 
+
     setState(() {
       _isLoadingRate = true;
       _rateError = null;
     });
- 
+
     try {
       final url = Uri.parse('$_exchangeBaseUrl/latest/IDR');
       final response = await http.get(url);
- 
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['result'] == 'success') {
           final rates = data['conversion_rates'] as Map<String, dynamic>;
           final rate = (rates[targetCurrency] as num?)?.toDouble() ?? 1.0;
- 
+
           setState(() {
             _exchangeRate = rate;
             _selectedCurrency = targetCurrency;
@@ -110,7 +112,7 @@ class _TicketPurchaseState
       });
     }
   }
- 
+
   /// Convert an IDR amount to the selected currency and format it.
   String _convertAmount(int idrAmount) {
     if (_selectedCurrency == 'IDR') {
@@ -120,7 +122,7 @@ class _TicketPurchaseState
     final symbol = _currencySymbol(_selectedCurrency);
     return '$symbol ${_formatConverted(converted)}';
   }
- 
+
   String _currencySymbol(String code) {
     const symbols = {
       'USD': '\$',
@@ -134,14 +136,14 @@ class _TicketPurchaseState
     };
     return symbols[code] ?? code;
   }
- 
+
   String _formatNumber(int value) {
     return value.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]}.',
     );
   }
- 
+
   String _formatConverted(double value) {
     if (value >= 1000) {
       return value.toStringAsFixed(2).replaceAllMapped(
@@ -151,7 +153,7 @@ class _TicketPurchaseState
     }
     return value.toStringAsFixed(4);
   }
- 
+
   void _showCurrencyPicker() {
     showModalBottomSheet(
       context: context,
@@ -203,7 +205,7 @@ class _TicketPurchaseState
                   _fetchExchangeRate(entry.key);
                 },
                 tileColor: isSelected
-                    ? const Color(0xFFE4572E).withOpacity(0.06)
+                    ? const Color(0xFFE4572E).withValues(alpha: 0.06)
                     : null,
               );
             }),
@@ -214,41 +216,47 @@ class _TicketPurchaseState
     );
   }
   // ────────────────────────────────────────────────
- 
+
   Future<void> loadTicketTypes() async {
     try {
       final eventId =
           widget.event["id"]?.toString() ?? "";
- 
+
       final data =
           await TicketService.getTicketTypes(
         eventId,
       );
- 
+
       setState(() {
         ticketTypes = data;
- 
+
         if (data.isNotEmpty) {
           selectedTypeId =
               data[0]["id"].toString();
+        } else {
+          // Fallback: coba ambil ticket_type_id langsung dari event object
+          final fallback = widget.event["ticket_type_id"]?.toString();
+          if (fallback != null && fallback.isNotEmpty) {
+            selectedTypeId = fallback;
+          } else {
+          }
         }
- 
+
         isLoading = false;
       });
     } catch (e) {
-      print("LOAD TICKET ERROR: $e");
- 
+
       setState(() {
         isLoading = false;
       });
     }
   }
- 
+
   Future<void> loadUserPoints() async {
     try {
       final token =
           await StorageService.getToken();
- 
+
       final response = await http.get(
         Uri.parse(
           "${ApiConfig.baseUrl}/api/minigame",
@@ -257,31 +265,28 @@ class _TicketPurchaseState
           "Authorization": "Bearer $token",
         },
       );
- 
-      print("POINT BODY: ${response.body}");
- 
+
       if (response.statusCode == 200) {
         final data =
             jsonDecode(response.body);
- 
+
         setState(() {
           userPoints = int.tryParse(
                 data["points"].toString(),
               ) ??
               0;
- 
+
           vouchers =
               data["vouchers"] ?? [];
         });
       }
     } catch (e) {
-      print("LOAD POINT ERROR: $e");
     }
   }
- 
+
   Map<String, dynamic>? get selectedTicket {
     if (selectedTypeId == null) return null;
- 
+
     try {
       return ticketTypes.firstWhere(
         (e) =>
@@ -292,10 +297,10 @@ class _TicketPurchaseState
       return null;
     }
   }
- 
+
   int get ticketPrice {
     int price = 0;
- 
+
     if (selectedTicket != null) {
       price = int.tryParse(
             selectedTicket!["price"]
@@ -303,7 +308,7 @@ class _TicketPurchaseState
           ) ??
           0;
     }
- 
+
     if (price == 0) {
       price = int.tryParse(
             widget.event["price"]
@@ -311,61 +316,68 @@ class _TicketPurchaseState
           ) ??
           0;
     }
- 
+
     return price;
   }
- 
+
   int get baseTotal =>
       ticketPrice * quantity;
- 
+
   int get voucherDiscount =>
       ((baseTotal * discountPercent) / 100)
           .round();
- 
+
   int get finalPointsUsed {
     final subtotal =
         baseTotal - voucherDiscount;
- 
+
     if (pointsUsed > subtotal) {
       return subtotal;
     }
- 
+
     return pointsUsed;
   }
- 
+
   int get total {
     final subtotal =
         baseTotal - voucherDiscount;
- 
+
     return subtotal -
         finalPointsUsed +
         5;
   }
- 
+
   Future<void> handlePurchase() async {
     try {
+      // Validasi ticket type ID sebelum purchase
+      if (selectedTypeId == null || selectedTypeId!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Gagal: ticket type tidak ditemukan. Coba refresh halaman."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       setState(() {
         isProcessing = true;
       });
- 
-      await TicketService.purchase(
-        eventId:
-            widget.event["id"].toString(),
-        ticketTypeId:
-            selectedTypeId ?? "general",
+
+      // Kirim ke backend — backend yang generate qr_code di server
+      final result = await TicketService.purchase(
+        ticketTypeId: selectedTypeId!,
         quantity: quantity,
-        voucherCode:
-            appliedVoucherCode,
-        pointsUsed:
-            finalPointsUsed,
+        voucherCode: appliedVoucherCode,
+        pointsUsed: finalPointsUsed,
       );
- 
+
       setState(() {
         isProcessing = false;
       });
- 
+
       if (!mounted) return;
- 
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           duration: Duration(seconds: 3),
@@ -374,34 +386,36 @@ class _TicketPurchaseState
           ),
         ),
       );
- 
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text(
-              "Purchase Success"),
-          content: Text(
-            "Voucher: $discountPercent%\n"
-            "Points Used: $finalPointsUsed\n"
-            "Final Total: ${_convertAmount(total)}"
-            "${_selectedCurrency != 'IDR' ? '\n(Rp ${_formatNumber(total)} IDR)' : ''}",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text("OK"),
-            )
-          ],
-        ),
+
+      // Backend return: { tickets: [{ticketId, qrCode}, ...] }
+      // Field qrCode (camelCase) sesuai ticketController.js: createdTickets.push({ ticketId, qrCode })
+      List<String> allQrCodes = [];
+      final dynamic ticketsData = result['tickets'];
+
+      if (ticketsData is List && ticketsData.isNotEmpty) {
+        allQrCodes = ticketsData
+            .map((t) => (t['qrCode'] ?? t['qr_code'])?.toString() ?? '')
+            .where((q) => q.isNotEmpty)
+            .toList();
+      }
+
+      // Fallback jika struktur response tidak sesuai
+      if (allQrCodes.isEmpty) {
+        final singleQr = result['qrCode'] ?? result['qr_code'];
+        if (singleQr != null) allQrCodes = [singleQr.toString()];
+      }
+
+      _showTicketDialog(
+        qrCodes: allQrCodes,
+        discountPercent: discountPercent,
+        pointsUsed: finalPointsUsed,
+        total: total,
       );
     } catch (e) {
       setState(() {
         isProcessing = false;
       });
- 
+
       ScaffoldMessenger.of(context)
           .showSnackBar(
         SnackBar(
@@ -412,11 +426,230 @@ class _TicketPurchaseState
       );
     }
   }
- 
+
+  void _showTicketDialog({
+    required List<String> qrCodes,
+    required int discountPercent,
+    required int pointsUsed,
+    required int total,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Header ──────────────────────────
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE4572E),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Pembayaran Berhasil!',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${qrCodes.length} tiket telah dibeli',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Summary ──────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F1E8),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    children: [
+                      _dialogRow('Diskon Voucher', '$discountPercent%'),
+                      _dialogRow('Poin Digunakan', '$pointsUsed pts'),
+                      const Divider(height: 12),
+                      _dialogRow(
+                        'Total Bayar',
+                        _convertAmount(total),
+                        bold: true,
+                        valueColor: const Color(0xFFE4572E),
+                      ),
+                      if (_selectedCurrency != 'IDR')
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '(Rp ${_formatNumber(total)} IDR)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+                const Text(
+                  'Tunjukkan QR Code ini\nsaat check-in',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── QR Code(s) ───────────────────────
+                if (qrCodes.length == 1)
+                  _buildQrWidget(qrCodes.first, label: null)
+                else
+                  SizedBox(
+                    height: 260,
+                    child: PageView.builder(
+                      itemCount: qrCodes.length,
+                      itemBuilder: (_, i) => _buildQrWidget(
+                        qrCodes[i],
+                        label: 'Tiket ${i + 1} / ${qrCodes.length}',
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 20),
+
+                // ── Close button ─────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // close dialog
+                      Navigator.pop(context); // back to previous screen
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE4572E),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Selesai',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQrWidget(String data, {String? label}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (label != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: QrImageView(
+            data: data,
+            version: QrVersions.auto,
+            size: 200,
+            backgroundColor: Colors.white,
+            eyeStyle: const QrEyeStyle(
+              eyeShape: QrEyeShape.square,
+              color: Color(0xFF1A1A2E),
+            ),
+            dataModuleStyle: const QrDataModuleStyle(
+              dataModuleShape: QrDataModuleShape.circle,
+              color: Color(0xFF1A1A2E),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SelectableText(
+          data,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey.shade500,
+            fontFamily: 'monospace',
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _dialogRow(String label, String value,
+      {bool bold = false, Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  color: Colors.grey.shade700, fontSize: 13)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+              color: valueColor ?? Colors.black87,
+              fontSize: bold ? 14 : 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void showVoucherPopup() {
     final unused =
         vouchers.where((v) => v["used"] == false).toList();
- 
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -441,7 +674,7 @@ class _TicketPurchaseState
                     BorderRadius.circular(2),
               ),
             ),
- 
+
             const Padding(
               padding: EdgeInsets.all(20),
               child: Row(
@@ -461,9 +694,9 @@ class _TicketPurchaseState
                 ],
               ),
             ),
- 
+
             const Divider(height: 1),
- 
+
             Expanded(
               child: unused.isEmpty
                   ? const Center(
@@ -494,7 +727,7 @@ class _TicketPurchaseState
                         final v = unused[i];
                         final pct =
                             v["value"] ?? 0;
- 
+
                         return Container(
                           margin:
                               const EdgeInsets.only(
@@ -510,8 +743,8 @@ class _TicketPurchaseState
                             border: Border.all(
                               color: const Color(
                                       0xFFE4572E)
-                                  .withOpacity(
-                                      0.3),
+                                  .withValues(
+                                      alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -565,14 +798,14 @@ class _TicketPurchaseState
                                   ],
                                 ),
                               ),
- 
+
                               CustomPaint(
                                 size: const Size(
                                     10, 80),
                                 painter:
                                     _DashedLinePainter(),
                               ),
- 
+
                               Expanded(
                                 child: Padding(
                                   padding:
@@ -611,7 +844,7 @@ class _TicketPurchaseState
                                       ),
                                       const SizedBox(
                                           height: 8),
- 
+
                                       SizedBox(
                                         height: 32,
                                         child:
@@ -622,7 +855,7 @@ class _TicketPurchaseState
                                                 () {
                                               appliedVoucherCode =
                                                   v["id"];
- 
+
                                               discountPercent =
                                                   int.tryParse(
                                                         v["value"]
@@ -630,7 +863,7 @@ class _TicketPurchaseState
                                                       ) ??
                                                       0;
                                             });
- 
+
                                             Navigator.pop(
                                                 context);
                                           },
@@ -680,7 +913,7 @@ class _TicketPurchaseState
       ),
     );
   }
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -796,9 +1029,9 @@ class _TicketPurchaseState
                     ),
                   ),
                   // ─────────────────────────────────────
- 
+
                   const SizedBox(height: 16),
- 
+
                   Container(
                     padding:
                         const EdgeInsets
@@ -822,9 +1055,9 @@ class _TicketPurchaseState
                           "Quantity",
                           "$quantity",
                         ),
- 
+
                         const SizedBox(height: 20),
- 
+
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -848,7 +1081,7 @@ class _TicketPurchaseState
                                 ),
                               ),
                               const SizedBox(height: 16),
- 
+
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -863,7 +1096,7 @@ class _TicketPurchaseState
                                         : null,
                                     icon: const Icon(Icons.remove),
                                   ),
- 
+
                                   Text(
                                     "$quantity",
                                     style: const TextStyle(
@@ -871,7 +1104,7 @@ class _TicketPurchaseState
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
- 
+
                                   IconButton(
                                     onPressed: () {
                                       setState(() {
@@ -885,12 +1118,12 @@ class _TicketPurchaseState
                             ],
                           ),
                         ),
- 
+
                         const SizedBox(
                             height: 20),
- 
+
                         const SizedBox(height: 20),
- 
+
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -916,7 +1149,7 @@ class _TicketPurchaseState
                                 ),
                               ),
                               const SizedBox(height: 12),
- 
+
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
@@ -946,9 +1179,9 @@ class _TicketPurchaseState
                             ],
                           ),
                         ),
- 
+
                         const SizedBox(height: 20),
- 
+
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -986,9 +1219,9 @@ class _TicketPurchaseState
                                   ),
                                 ],
                               ),
- 
+
                               const SizedBox(height: 16),
- 
+
                               Slider(
                                 value: pointsUsed.toDouble(),
                                 min: 0,
@@ -1008,7 +1241,7 @@ class _TicketPurchaseState
                                         });
                                       },
                               ),
- 
+
                               Center(
                                 child: Text(
                                   "Using $pointsUsed points",
@@ -1020,24 +1253,24 @@ class _TicketPurchaseState
                             ],
                           ),
                         ),
- 
+
                         _summaryRow(
                           "Voucher Discount",
                           "-${_convertAmount(voucherDiscount)}",
                         ),
- 
+
                         _summaryRow(
                           "Points Used",
                           "-${_convertAmount(finalPointsUsed)}",
                         ),
- 
+
                         _summaryRow(
                           "Service Fee",
                           _convertAmount(5),
                         ),
- 
+
                         const Divider(),
- 
+
                         // Total with converted currency
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1079,10 +1312,10 @@ class _TicketPurchaseState
                       ],
                     ),
                   ),
- 
+
                   const SizedBox(
                       height: 20),
- 
+
                   SizedBox(
                     width:
                         double.infinity,
@@ -1120,7 +1353,7 @@ class _TicketPurchaseState
             ),
     );
   }
- 
+
   Widget _summaryRow(
     String label,
     String value,
@@ -1148,35 +1381,32 @@ class _TicketPurchaseState
     );
   }
 }
- 
+
+// ── QR Code Painter (no external package needed) ─────────────────────────────
+// Uses a pure-Dart QR encoder based on ISO 18004.
+
 class _DashedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const dashHeight = 5.0;
     const dashSpace = 4.0;
- 
+
     final paint = Paint()
       ..color = Colors.grey.shade300
       ..strokeWidth = 1.5;
- 
+
     double startY = 0;
- 
+
     while (startY < size.height) {
       canvas.drawLine(
         Offset(size.width / 2, startY),
-        Offset(
-          size.width / 2,
-          startY + dashHeight,
-        ),
+        Offset(size.width / 2, startY + dashHeight),
         paint,
       );
- 
       startY += dashHeight + dashSpace;
     }
   }
- 
+
   @override
   bool shouldRepaint(_) => false;
 }
- 
-

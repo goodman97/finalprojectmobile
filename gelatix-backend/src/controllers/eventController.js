@@ -219,7 +219,7 @@ exports.createEvent = async (req, res) => {
     }
 
     const imageName = req.file
-      ? req.file.filename
+      ? req.file.destination.replace(/^\/+/, '') + req.file.filename
       : null;
 
     const result = await db.query(`
@@ -258,9 +258,17 @@ exports.createEvent = async (req, res) => {
       longitude || null
     ]);
 
+    const newEvent = result.rows[0];
+
+    // Auto-create default ticket type menggunakan price & quota dari event
+    await db.query(`
+      INSERT INTO ticket_types (event_id, name, price, quota)
+      VALUES ($1, 'General Admission', $2, $3)
+    `, [newEvent.id, price, quota]);
+
     res.status(201).json({
       message: "Event berhasil dibuat",
-      event: result.rows[0]
+      event: newEvent
     });
 
   } catch (err) {
@@ -307,7 +315,7 @@ exports.editEvent = async (req, res) => {
     }
 
     const imageName = req.file
-      ? req.file.filename
+      ? req.file.destination.replace(/^\/+/, '') + req.file.filename
       : own.rows[0].event_image;
 
     const result = await db.query(`
@@ -435,6 +443,29 @@ exports.getTicketTypes = async (req, res) => {
       GROUP BY tt.id
       ORDER BY tt.price ASC
     `, [id]);
+
+    // Jika ticket_types kosong, auto-generate dari data event
+    if (result.rows.length === 0) {
+      const eventRes = await db.query(
+        `SELECT id, price, quota FROM events WHERE id = $1`, [id]
+      );
+
+      if (eventRes.rows.length === 0) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      const event = eventRes.rows[0];
+
+      // Insert ticket type default
+      const inserted = await db.query(`
+        INSERT INTO ticket_types (event_id, name, price, quota)
+        VALUES ($1, 'General Admission', $2, $3)
+        RETURNING id, name, price, quota, created_at,
+                  quota AS available
+      `, [event.id, event.price, event.quota]);
+
+      return res.json(inserted.rows);
+    }
 
     res.json(result.rows);
 

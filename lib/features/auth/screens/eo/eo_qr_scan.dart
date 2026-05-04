@@ -3,6 +3,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/services/storage_service.dart';
+
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
 
@@ -12,20 +15,27 @@ class QRScannerScreen extends StatefulWidget {
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
   bool isProcessing = false;
-
-  String? scanStatus; // valid / invalid / already_used
+  String? scanStatus; // valid / invalid / already_used / error
   Map<String, dynamic>? ticketData;
 
   Future<void> validateTicket(String code) async {
+    if (isProcessing || scanStatus != null) return;
+
     setState(() {
       isProcessing = true;
       scanStatus = null;
     });
 
     try {
+      // Ambil token — endpoint /scan butuh Authorization header
+      final token = await StorageService.getToken();
+
       final res = await http.post(
-        Uri.parse("http://10.0.2.2:5000/api/tickets/scan"),
-        headers: {"Content-Type": "application/json"},
+        Uri.parse("${ApiConfig.baseUrl}/api/tickets/scan"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
         body: jsonEncode({"qr": code}),
       );
 
@@ -33,11 +43,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
       setState(() {
         isProcessing = false;
-        scanStatus = data["status"];
+        scanStatus = data["status"] ?? "invalid";
         ticketData = data["ticket"];
       });
 
-      // auto reset setelah 3 detik
+      // Auto reset setelah 3 detik
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
           setState(() {
@@ -46,86 +56,174 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           });
         }
       });
-
     } catch (e) {
-      setState(() => isProcessing = false);
+      setState(() {
+        isProcessing = false;
+        scanStatus = "error";
+      });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Gagal konek ke server")),
-      );
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => scanStatus = null);
+      });
+    }
+  }
+
+  Color get _overlayColor {
+    switch (scanStatus) {
+      case "valid":
+        return Colors.green.withValues(alpha: 0.88);
+      case "already_used":
+        return Colors.orange.withValues(alpha: 0.88);
+      case "error":
+        return Colors.grey.withValues(alpha: 0.88);
+      default:
+        return Colors.red.withValues(alpha: 0.88);
+    }
+  }
+
+  IconData get _overlayIcon {
+    switch (scanStatus) {
+      case "valid":
+        return Icons.check_circle_outline;
+      case "already_used":
+        return Icons.warning_amber_rounded;
+      default:
+        return Icons.cancel_outlined;
+    }
+  }
+
+  String get _overlayText {
+    switch (scanStatus) {
+      case "valid":
+        return "ACCESS GRANTED";
+      case "already_used":
+        return "ALREADY USED";
+      case "error":
+        return "SERVER ERROR";
+      default:
+        return "INVALID TICKET";
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan QR")),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text("Scan Tiket"),
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+      ),
       body: Stack(
         children: [
 
-          /// 🔥 CAMERA
+          // ── Camera ──────────────────────────────────
           MobileScanner(
             onDetect: (barcodeCapture) {
-              final barcode = barcodeCapture.barcodes.first;
-              final code = barcode.rawValue;
-
-              if (code != null &&
-                  !isProcessing &&
-                  scanStatus == null) {
-                validateTicket(code);
-              }
+              final code = barcodeCapture.barcodes.firstOrNull?.rawValue;
+              if (code != null) validateTicket(code);
             },
           ),
 
-          /// 🔄 LOADING
-          if (isProcessing)
-            const Center(child: CircularProgressIndicator()),
-
-          /// 🔥 RESULT OVERLAY
-          if (scanStatus != null)
-            Container(
-              color: scanStatus == "valid"
-                  ? Colors.green.withOpacity(0.85)
-                  : Colors.red.withOpacity(0.85),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+          // ── Scan frame overlay ───────────────────────
+          if (scanStatus == null && !isProcessing)
+            Center(
+              child: Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: const Color(0xFFE4572E),
+                    width: 3,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-
-                    Icon(
-                      scanStatus == "valid"
-                          ? Icons.check_circle
-                          : Icons.cancel,
-                      size: 100,
-                      color: Colors.white,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    Text(
-                      scanStatus == "valid"
-                          ? "ACCESS GRANTED"
-                          : scanStatus == "already_used"
-                              ? "ALREADY USED"
-                              : "INVALID TICKET",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        "Arahkan ke QR Code",
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
 
-                    const SizedBox(height: 10),
+          // ── Loading ──────────────────────────────────
+          if (isProcessing)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
 
-                    if (ticketData != null)
+          // ── Result overlay ───────────────────────────
+          if (scanStatus != null)
+            AnimatedOpacity(
+              opacity: scanStatus != null ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Container(
+                color: _overlayColor,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(_overlayIcon, size: 100, color: Colors.white),
+
+                      const SizedBox(height: 20),
+
                       Text(
-                        ticketData!["name"] ?? "",
+                        _overlayText,
                         style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
                         ),
                       ),
-                  ],
+
+                      const SizedBox(height: 12),
+
+                      if (ticketData != null) ...[
+                        Text(
+                          ticketData!["name"] ?? "",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ticketData!["email"] ?? "",
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 32),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          "Scanning lagi dalam 3 detik...",
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
