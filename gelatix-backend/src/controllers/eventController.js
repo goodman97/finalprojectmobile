@@ -258,6 +258,23 @@ exports.createEvent = async (req, res) => {
       longitude || null
     ]);
 
+    const createdEvent = result.rows[0];
+
+    await db.query(`
+      INSERT INTO ticket_types (
+        event_id,
+        name,
+        price,
+        quota
+      )
+      VALUES ($1,$2,$3,$4)
+    `, [
+      createdEvent.id,
+      "Regular Ticket",
+      createdEvent.price,
+      createdEvent.quota
+    ]);
+
     res.status(201).json({
       message: "Event berhasil dibuat",
       event: result.rows[0]
@@ -496,6 +513,88 @@ exports.downloadAnalyticsCSV = async (req, res) => {
 
   } catch (err) {
     console.error("CSV ERROR:", err);
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
+
+// POST /api/events/eo/:id/ticket-types
+exports.createTicketType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, quota } = req.body;
+
+    if (!name || !price || !quota) {
+      return res.status(400).json({
+        message: "Semua field wajib diisi"
+      });
+    }
+
+    const result = await db.query(`
+      INSERT INTO ticket_types (
+        event_id,
+        name,
+        price,
+        quota
+      )
+      VALUES ($1,$2,$3,$4)
+      RETURNING *
+    `, [
+      id,
+      name,
+      price,
+      quota
+    ]);
+
+    res.status(201).json({
+      message: "Ticket type berhasil dibuat",
+      ticket: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error("CREATE TICKET TYPE ERROR:", err);
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
+
+exports.updateTicketType = async (req, res) => {
+  try {
+    const { ticketTypeId } = req.params;
+    const { name, price, quota } = req.body;
+
+    const result = await db.query(`
+      UPDATE ticket_types
+      SET
+        name = COALESCE($1, name),
+        price = COALESCE($2, price),
+        quota = COALESCE($3, quota)
+      WHERE id = $4
+      RETURNING *
+    `, [
+      name || null,
+      price || null,
+      quota || null,
+      ticketTypeId
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Ticket type not found"
+      });
+    }
+
+    res.json({
+      message: "Ticket type updated",
+      ticket: result.rows[0]
+    });
+
+  } catch (err) {
+    console.error(err);
+
     res.status(500).json({
       message: err.message
     });
