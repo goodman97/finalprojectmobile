@@ -68,6 +68,7 @@ router.get(
   ctrl.getEoEventDetail
 );
 
+
 // ── Admin only ────────────────────────────────────────────────────────────────
 
 router.get(
@@ -92,6 +93,16 @@ router.delete(
 );
 
 // ── Public ────────────────────────────────────────────────────────────────────
+
+// validation
+router.get(
+  "/tickets/validation-stats", 
+  auth, 
+  ctrl.getValidationStats
+);
+
+// PUBLIC ROUTES
+
 
 router.get("/", ctrl.getAllEvents);
 router.get("/:id", ctrl.getEventById);

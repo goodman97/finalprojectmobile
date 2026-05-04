@@ -12,9 +12,9 @@ exports.getEoDashboard = async (req, res) => {
         COUNT(t.id) AS total_sold,
         COALESCE(SUM(tr.amount), 0) AS total_revenue
       FROM events e
-      LEFT JOIN tickets t
+      LEFT JOIN tickets t 
         ON t.event_id = e.id 
-        AND t.status = 'active'
+        AND t.status IN ('active', 'used', 'resale')
       LEFT JOIN transactions tr
         ON tr.ticket_id = t.id 
         AND tr.status = 'success'
@@ -30,18 +30,23 @@ exports.getEoDashboard = async (req, res) => {
         e.event_image,
         e.quota,
         e.price,
-        COUNT(t.id) AS sold,
-        COALESCE(SUM(tr.amount), 0) AS revenue,
+        COUNT(DISTINCT t.id) AS sold,
+        COALESCE(SUM(DISTINCT tr.amount), 0) AS revenue,
         COALESCE(
-          ROUND(COUNT(t.id)::numeric / NULLIF(e.quota,0) * 100),
+          ROUND(
+            (
+              COUNT(DISTINCT t.id)::numeric / NULLIF(e.quota, 0)
+            ) * 100,
+            1
+          ),
           0
         ) AS fill_percent
       FROM events e
       LEFT JOIN tickets t
-        ON t.event_id = e.id 
-        AND t.status = 'active'
+        ON t.event_id = e.id
+        AND t.status IN ('active', 'used', 'resale')
       LEFT JOIN transactions tr
-        ON tr.ticket_id = t.id 
+        ON tr.ticket_id = t.id
         AND tr.status = 'success'
       WHERE e.organizer_id = $1
         AND e.status = 'active'
@@ -83,47 +88,51 @@ exports.getEoDashboard = async (req, res) => {
 exports.getMyEvents = async (req, res) => {
   try {
     const organizerId = req.user.id;
-    const q = req.query.q ? `%${req.query.q}%` : "%";
+    const q = req.query.q || "";
 
     const result = await db.query(`
       SELECT
-        e.id,
-        e.name,
-        e.start_date,
-        e.end_date,
-        e.address,
-        e.price,
-        e.quota,
-        e.status,
-        e.event_image,
-        e.description,
-        e.latitude,
-        e.longitude,
-        COUNT(t.id) AS sold,
-        COALESCE(SUM(tr.amount), 0) AS revenue
+        e.*,
+
+        -- jumlah tiket terjual valid
+        COUNT(DISTINCT t.id) FILTER (
+          WHERE t.status IN ('active', 'used', 'resale')
+        ) AS sold,
+
+        -- total revenue transaksi sukses
+        COALESCE(
+          SUM(tr.amount) FILTER (
+            WHERE tr.status = 'success'
+          ),
+          0
+        ) AS revenue
+
       FROM events e
+
       LEFT JOIN tickets t
-        ON t.event_id = e.id 
-        AND t.status = 'active'
+        ON t.event_id = e.id
+
       LEFT JOIN transactions tr
-        ON tr.ticket_id = t.id 
-        AND tr.status = 'success'
+        ON tr.ticket_id = t.id
+
       WHERE e.organizer_id = $1
-        AND (
-          LOWER(e.name) LIKE LOWER($2)
-          OR LOWER(e.address) LIKE LOWER($2)
-          OR TO_CHAR(e.start_date, 'DD/MM/YYYY') LIKE $2
-          OR TO_CHAR(e.start_date, 'YYYY-MM-DD') LIKE $2
-        )
+        AND LOWER(e.name) LIKE LOWER($2)
+
       GROUP BY e.id
-      ORDER BY e.start_date DESC
-    `, [organizerId, q]);
+      ORDER BY e.created_at DESC
+    `, [
+      organizerId,
+      `%${q}%`
+    ]);
 
     res.json(result.rows);
 
-  } catch (err) {
-    console.error("MY EVENTS ERROR:", err);
-    res.status(500).json({ message: err.message });
+  } catch (error) {
+    console.log("GET MY EVENTS ERROR:", error);
+
+    res.status(500).json({
+      message: error.message
+    });
   }
 };
 
@@ -137,23 +146,46 @@ exports.getEoEventDetail = async (req, res) => {
       SELECT
         e.*,
         u.name AS organizer_name,
-        COUNT(t.id) AS sold,
-        COALESCE(SUM(tr.amount), 0) AS revenue,
-        COALESCE(
-          ROUND(COUNT(t.id)::numeric / NULLIF(e.quota,0) * 100),
-          0
+
+        (
+          SELECT COUNT(*)
+          FROM tickets t
+          WHERE t.event_id = e.id
+          AND t.status IN ('active', 'used', 'resale')
+        ) AS sold,
+
+        (
+          SELECT COALESCE(SUM(tr.amount), 0)
+          FROM transactions tr
+          JOIN tickets t ON t.id = tr.ticket_id
+          WHERE t.event_id = e.id
+          AND tr.status = 'success'
+        ) AS revenue,
+
+        (
+          SELECT COALESCE(
+            ROUND(
+              (
+                COUNT(*) FILTER (
+                  WHERE t.status IN ('active', 'used', 'resale')
+                )::numeric
+                /
+                NULLIF(e.quota, 0)
+              ) * 100
+            ),
+            0
+          )
+          FROM tickets t
+          WHERE t.event_id = e.id
         ) AS fill_percent
+
       FROM events e
-      LEFT JOIN users u 
+      LEFT JOIN users u
         ON e.organizer_id = u.id
-      LEFT JOIN tickets t
-        ON t.event_id = e.id 
-        AND t.status = 'active'
-      LEFT JOIN transactions tr
-        ON tr.ticket_id = t.id 
-        AND tr.status = 'success'
-      WHERE e.id = $1 
+
+      WHERE e.id = $1
         AND e.organizer_id = $2
+
       GROUP BY e.id, u.name
     `, [id, organizerId]);
 
@@ -268,7 +300,7 @@ exports.createEvent = async (req, res) => {
 
     res.status(201).json({
       message: "Event berhasil dibuat",
-      event: newEvent
+      event: createdEvent
     });
 
   } catch (err) {
@@ -649,5 +681,74 @@ exports.updateTicketType = async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// GET /api/tickets/validation-stats
+exports.getValidationStats = async (req, res) => {
+  try {
+    const organizerId = req.user.id;
+
+    // stats validation
+    const statsRes = await db.query(`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE t.updated_at::date = CURRENT_DATE
+          AND t.status = 'used'
+        ) AS today,
+
+        COUNT(*) FILTER (
+          WHERE t.updated_at >= NOW() - INTERVAL '7 days'
+          AND t.status = 'used'
+        ) AS this_week,
+
+        COUNT(*) FILTER (
+          WHERE t.status = 'used'
+        ) AS total
+
+      FROM tickets t
+      JOIN events e 
+        ON e.id = t.event_id
+
+      WHERE e.organizer_id = $1
+    `, [organizerId]);
+
+    // recent validations
+    const recentRes = await db.query(`
+      SELECT
+        t.id,
+        t.qr_code,
+        t.status,
+        t.updated_at,
+
+        e.name AS event_name,
+
+        u.name AS holder_name
+
+      FROM tickets t
+      JOIN events e 
+        ON e.id = t.event_id
+
+      LEFT JOIN users u
+        ON u.id = t.current_owner_id
+
+      WHERE e.organizer_id = $1
+        AND t.status = 'used'
+
+      ORDER BY t.updated_at DESC
+      LIMIT 10
+    `, [organizerId]);
+
+    res.json({
+      stats: statsRes.rows[0],
+      recentValidations: recentRes.rows
+    });
+
+  } catch (err) {
+    console.error("VALIDATION STATS ERROR:", err);
+
+    res.status(500).json({
+      message: err.message
+    });
   }
 };

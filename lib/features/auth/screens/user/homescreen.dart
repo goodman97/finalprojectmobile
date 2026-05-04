@@ -67,6 +67,29 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  String formatImage(dynamic image) {
+    if (image == null || image.toString().isEmpty) {
+      return "";
+    }
+
+    final img = image.toString();
+    final base = ApiConfig.baseUrl;
+
+    if (img.startsWith("http")) {
+      return img;
+    }
+
+    if (img.startsWith("/uploads/")) {
+      return "$base$img";
+    }
+
+    if (img.startsWith("uploads/")) {
+      return "$base/$img";
+    }
+
+    return "$base/uploads/events/$img";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -308,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               location: event['address'] ?? '-',
                               category: "Event",
                               price: "Rp ${event['price'] ?? 0}",
-                              image: event['event_image'],
+                              image: formatImage(event['event_image']),
                             );
                           },
                         ),
@@ -399,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const BorderRadius.vertical(top: Radius.circular(25)),
                   child: (image != null && image.isNotEmpty)
                     ? Image.network(
-                        "${ApiConfig.baseUrl}/uploads/events/$image",
+                        image, // langsung pakai hasil formatImage()
                         height: 180,
                         width: double.infinity,
                         fit: BoxFit.cover,

@@ -55,8 +55,26 @@ class _EoEventDetailState extends State<EoEventDetail> {
   }
 
   String _imgUrl(dynamic img) {
-    if (img == null || img.toString().isEmpty) return "";
-    return "${ApiConfig.baseUrl}/uploads/events/${img.toString()}";
+    if (img == null || img.toString().isEmpty) {
+      return "";
+    }
+
+    final image = img.toString();
+    final base = ApiConfig.baseUrl;
+
+    if (image.startsWith("http")) {
+      return image;
+    }
+
+    if (image.startsWith("/uploads/")) {
+      return "$base$image";
+    }
+
+    if (image.startsWith("uploads/")) {
+      return "$base/$image";
+    }
+
+    return "$base/uploads/events/$image";
   }
 
   @override
@@ -198,7 +216,7 @@ class _EoEventDetailState extends State<EoEventDetail> {
                             _infoRow(Icons.location_on, "Location",
                                 e["address"] ?? "-"),
                             const SizedBox(height: 8),
-                            _infoRow(Icons.attach_money, "Price",
+                            _infoRow(Icons.payments_outlined, "Price",
                                 _rupiah.format(
                                     double.tryParse(e["price"]?.toString() ?? "0") ?? 0)),
                             const SizedBox(height: 16),
@@ -229,7 +247,7 @@ class _EoEventDetailState extends State<EoEventDetail> {
                               const Color(0xFFE4572E)),
                           const SizedBox(width: 10),
                           _statsCard("Revenue", _rupiah.format(revenue),
-                              Icons.attach_money, const Color(0xFF2F3E2F),
+                              Icons.payments_outlined, const Color(0xFF2F3E2F),
                               smallText: true),
                         ],
                       ),

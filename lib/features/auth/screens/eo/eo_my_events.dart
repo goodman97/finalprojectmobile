@@ -49,8 +49,26 @@ class _EoMyEventsState extends State<EoMyEvents> {
   }
 
   String _imgUrl(dynamic img) {
-    if (img == null || img.toString().isEmpty) return "";
-    return "${ApiConfig.baseUrl}/uploads/events/${img.toString()}";
+    if (img == null || img.toString().isEmpty) {
+      return "";
+    }
+
+    final image = img.toString();
+    final base = ApiConfig.baseUrl;
+
+    if (image.startsWith("http")) {
+      return image;
+    }
+
+    if (image.startsWith("/uploads/")) {
+      return "$base$image";
+    }
+
+    if (image.startsWith("uploads/")) {
+      return "$base/$image";
+    }
+
+    return "$base/uploads/events/$image";
   }
 
   @override
@@ -188,7 +206,7 @@ class _EoMyEventsState extends State<EoMyEvents> {
   }
 
   Widget _eventCard(Map<String, dynamic> e) {
-    final sold    = int.tryParse(e["sold"]?.toString() ?? "0") ?? 0;
+    final sold = int.tryParse(e["sold"]?.toString() ?? "0") ?? 0;
     final revenue = double.tryParse(e["revenue"]?.toString() ?? "0") ?? 0;
     final isActive = e["status"] == "active";
 
@@ -324,7 +342,7 @@ class _EoMyEventsState extends State<EoMyEvents> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(children: [
-                              const Icon(Icons.attach_money,
+                              const Icon(Icons.payments_outlined,
                                   size: 12, color: Color(0xFFE4572E)),
                               const SizedBox(width: 4),
                               const Text("Revenue",
