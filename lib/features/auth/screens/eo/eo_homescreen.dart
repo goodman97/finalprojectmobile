@@ -126,7 +126,7 @@ class _EoHomescreenState extends State<EoHomescreen> {
                           ),
                           const SizedBox(width: 10),
                           _statCard(
-                            icon: Icons.attach_money,
+                            icon: Icons.payments_outlined,
                             iconColor: const Color(0xFFE4572E),
                             value: _rupiah.format(
                                 double.tryParse(
@@ -289,10 +289,10 @@ class _EoHomescreenState extends State<EoHomescreen> {
   }
 
   Widget _upcomingCard(Map<String, dynamic> e) {
-    final sold       = int.tryParse(e["sold"]?.toString() ?? "0") ?? 0;
-    final quota      = int.tryParse(e["quota"]?.toString() ?? "0") ?? 1;
-    final fillPct    = int.tryParse(e["fill_percent"]?.toString() ?? "0") ?? 0;
-    final revenue    = double.tryParse(e["revenue"]?.toString() ?? "0") ?? 0;
+    final sold = int.tryParse(e["sold"]?.toString() ?? "0") ?? 0;
+    final quota = int.tryParse(e["quota"]?.toString() ?? "0") ?? 1;
+    final fillPct = double.tryParse(e["fill_percent"]?.toString() ?? "0") ?? 0;
+    final revenue = double.tryParse(e["revenue"]?.toString() ?? "0") ?? 0;
 
     return GestureDetector(
       onTap: () => Navigator.push(

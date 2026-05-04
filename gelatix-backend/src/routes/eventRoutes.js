@@ -73,6 +73,13 @@ router.get(
   ctrl.downloadAnalyticsCSV
 );
 
+// validation
+router.get(
+  "/tickets/validation-stats", 
+  auth, 
+  ctrl.getValidationStats
+);
+
 // PUBLIC ROUTES
 
 router.get("/", ctrl.getAllEvents);

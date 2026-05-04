@@ -67,7 +67,7 @@ class _TicketPurchaseState
     loadUserPoints();
   }
 
-  // ── Currency helpers ─────────────────────────────
+  // Currency helpers 
   Future<void> _fetchExchangeRate(String targetCurrency) async {
     if (targetCurrency == 'IDR') {
       setState(() {

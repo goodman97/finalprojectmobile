@@ -22,10 +22,26 @@ class EventDetail extends StatelessWidget {
   }
 
   String formatImage(dynamic image) {
-    if (image == null || image.toString().isEmpty) return "";
+    if (image == null || image.toString().isEmpty) {
+      return "";
+    }
+
     final img = image.toString();
-    if (img.startsWith("http")) return img;
-    return "${ApiConfig.baseUrl}/uploads/events/$img";
+    final base = ApiConfig.baseUrl;
+
+    if (img.startsWith("http")) {
+      return img;
+    }
+
+    if (img.startsWith("/uploads/")) {
+      return "$base$img";
+    }
+
+    if (img.startsWith("uploads/")) {
+      return "$base/$img";
+    }
+
+    return "$base/uploads/events/$img";
   }
 
   @override
@@ -97,18 +113,6 @@ class EventDetail extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Action buttons
-                    Positioned(
-                      top: 40,
-                      right: 16,
-                      child: Row(
-                        children: [
-                          _actionButton(Icons.share),
-                          const SizedBox(width: 8),
-                          _actionButton(Icons.favorite_border),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
 
@@ -156,7 +160,7 @@ class EventDetail extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  "\rp$price",
+                                  "Rp ${event['price'] ?? 0}",
                                   style: const TextStyle(
                                     fontSize: 26,
                                     fontWeight: FontWeight.bold,
@@ -265,6 +269,7 @@ class EventDetail extends StatelessWidget {
 
   Widget _infoRow(IconData icon, String label, String value) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(10),
@@ -272,20 +277,40 @@ class EventDetail extends StatelessWidget {
             color: const Color(0xFFF5F1E8),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Icon(icon, color: const Color(0xFF2F3E2F), size: 20),
+          child: Icon(
+            icon,
+            color: const Color(0xFF2F3E2F),
+            size: 20,
+          ),
         ),
+
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style:
-                    const TextStyle(color: Colors.grey, fontSize: 12)),
-            Text(value,
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
                 style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 14)),
-          ],
-        )
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                value,
+                softWrap: true,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

@@ -134,7 +134,7 @@ class _EoCreateEventState extends State<EoCreateEvent> {
     }
   }
 
-  // ── Map picker bottom sheet ─────────────────────────────────────────────
+  // Map picker bottom sheet ─────────────────────────────────────────────
   Future<void> _openMapPicker() async {
     LatLng center = _lat != null && _lng != null
         ? LatLng(_lat!, _lng!)
@@ -317,7 +317,7 @@ class _EoCreateEventState extends State<EoCreateEvent> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header ─────────────────────────────────────────────────────
+            // Header
             Container(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               decoration: const BoxDecoration(
@@ -350,7 +350,7 @@ class _EoCreateEventState extends State<EoCreateEvent> {
               ),
             ),
 
-            // ── Form ────────────────────────────────────────────────────────
+            // Form
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -512,7 +512,6 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                                 _label("Ticket Price (Rp)"),
                                 _textField(
                                   _price, "50000",
-                                  prefixIcon: Icons.attach_money,
                                   keyboardType: TextInputType.number,
                                   validator: _req,
                                 ),

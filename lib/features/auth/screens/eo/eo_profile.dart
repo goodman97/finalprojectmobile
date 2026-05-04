@@ -220,16 +220,6 @@ class _EOProfileState extends State<EOProfile> {
                   }
                 },
               ),
-              menuItem(Icons.account_balance_wallet, "Payout Settings"),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // SUPPORT
-            sectionTitle("SUPPORT"),
-            sectionCard([
-              menuItem(Icons.help_outline, "Help Center"),
-              menuItem(Icons.description, "Terms & Policies"),
             ]),
 
             const SizedBox(height: 20),
