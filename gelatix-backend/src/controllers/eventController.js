@@ -127,6 +127,30 @@ exports.getMyEvents = async (req, res) => {
   }
 };
 
+// GET /api/events/eo/all
+exports.getAllAdminEvents = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT
+        e.*,
+        u.name AS organizer_name,
+        COUNT(t.id) AS sold
+      FROM events e
+      LEFT JOIN users u
+        ON e.organizer_id = u.id
+      LEFT JOIN tickets t
+        ON t.event_id = e.id
+      GROUP BY e.id, u.name
+      ORDER BY e.start_date DESC
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("GET ALL ADMIN EVENTS ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // GET /api/events/eo/:id
 exports.getEoEventDetail = async (req, res) => {
   try {
@@ -283,12 +307,20 @@ exports.editEvent = async (req, res) => {
     const { id } = req.params;
     const organizerId = req.user.id;
 
-    const own = await db.query(
-      "SELECT id, event_image FROM events WHERE id = $1 AND organizer_id = $2",
-      [id, organizerId]
+    const eventRes = await db.query(
+      "SELECT id, organizer_id, event_image FROM events WHERE id = $1",
+      [id]
     );
 
-    if (own.rows.length === 0) {
+    if (eventRes.rows.length === 0) {
+      return res.status(404).json({
+        message: "Event tidak ditemukan"
+      });
+    }
+
+    const eventRow = eventRes.rows[0];
+
+    if (req.user.role !== "admin" && eventRow.organizer_id !== organizerId) {
       return res.status(403).json({
         message: "Tidak diizinkan"
       });
@@ -316,7 +348,7 @@ exports.editEvent = async (req, res) => {
 
     const imageName = req.file
       ? req.file.destination.replace(/^\/+/, '') + req.file.filename
-      : own.rows[0].event_image;
+      : eventRow.event_image;
 
     const result = await db.query(`
       UPDATE events SET

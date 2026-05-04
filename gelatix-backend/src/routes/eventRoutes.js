@@ -17,6 +17,7 @@ module.exports = router;
 
 router.get ("/eo/dashboard", auth, role(["organizer","admin"]), ctrl.getEoDashboard);
 router.get ("/eo/my-events", auth, role(["organizer","admin"]), ctrl.getMyEvents);
+router.get ("/eo/all", auth, role(["admin"]), ctrl.getAllAdminEvents);
 router.get ("/eo/:id", auth, role(["organizer","admin"]), ctrl.getEoEventDetail);
 router.post("/eo/create", auth, role(["organizer","admin"]), upload.single("event_image"), ctrl.createEvent);
 router.put ("/eo/:id/edit", auth, role(["organizer","admin"]), upload.single("event_image"), ctrl.editEvent);
