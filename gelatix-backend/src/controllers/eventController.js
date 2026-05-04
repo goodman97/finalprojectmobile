@@ -127,30 +127,6 @@ exports.getMyEvents = async (req, res) => {
   }
 };
 
-// GET /api/events/eo/all
-exports.getAllAdminEvents = async (req, res) => {
-  try {
-    const result = await db.query(`
-      SELECT
-        e.*,
-        u.name AS organizer_name,
-        COUNT(t.id) AS sold
-      FROM events e
-      LEFT JOIN users u
-        ON e.organizer_id = u.id
-      LEFT JOIN tickets t
-        ON t.event_id = e.id
-      GROUP BY e.id, u.name
-      ORDER BY e.start_date DESC
-    `);
-
-    res.json(result.rows);
-  } catch (err) {
-    console.error("GET ALL ADMIN EVENTS ERROR:", err);
-    res.status(500).json({ message: err.message });
-  }
-};
-
 // GET /api/events/eo/:id
 exports.getEoEventDetail = async (req, res) => {
   try {
@@ -307,20 +283,12 @@ exports.editEvent = async (req, res) => {
     const { id } = req.params;
     const organizerId = req.user.id;
 
-    const eventRes = await db.query(
-      "SELECT id, organizer_id, event_image FROM events WHERE id = $1",
-      [id]
+    const own = await db.query(
+      "SELECT id, event_image FROM events WHERE id = $1 AND organizer_id = $2",
+      [id, organizerId]
     );
 
-    if (eventRes.rows.length === 0) {
-      return res.status(404).json({
-        message: "Event tidak ditemukan"
-      });
-    }
-
-    const eventRow = eventRes.rows[0];
-
-    if (req.user.role !== "admin" && eventRow.organizer_id !== organizerId) {
+    if (own.rows.length === 0) {
       return res.status(403).json({
         message: "Tidak diizinkan"
       });
@@ -348,7 +316,7 @@ exports.editEvent = async (req, res) => {
 
     const imageName = req.file
       ? req.file.destination.replace(/^\/+/, '') + req.file.filename
-      : eventRow.event_image;
+      : own.rows[0].event_image;
 
     const result = await db.query(`
       UPDATE events SET
@@ -562,5 +530,124 @@ exports.downloadAnalyticsCSV = async (req, res) => {
     res.status(500).json({
       message: err.message
     });
+  }
+};
+
+// ── ADMIN ENDPOINTS ───────────────────────────────────────────────────────────
+
+// GET /api/events/admin/all
+exports.adminGetAllEvents = async (req, res) => {
+  try {
+    const q = req.query.q ? `%${req.query.q}%` : "%";
+    const status = req.query.status;
+
+    const result = await db.query(`
+      SELECT
+        e.id,
+        e.name,
+        e.start_date,
+        e.address,
+        e.status,
+        e.price,
+        e.quota,
+        e.event_image,
+        u.name AS organizer_name,
+        COUNT(t.id) AS sold
+      FROM events e
+      LEFT JOIN users u ON u.id = e.organizer_id
+      LEFT JOIN tickets t ON t.event_id = e.id AND t.status = 'active'
+      WHERE
+        (LOWER(e.name) LIKE LOWER($1) OR LOWER(e.address) LIKE LOWER($1))
+        ${status ? "AND e.status = $2" : ""}
+      GROUP BY e.id, u.name
+      ORDER BY e.start_date DESC
+    `, status ? [q, status] : [q]);
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PATCH /api/events/admin/:id/status
+exports.adminToggleStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // 'active' | 'inactive'
+
+    const result = await db.query(
+      `UPDATE events SET status = $1 WHERE id = $2 RETURNING id, name, status`,
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.json({ message: "Status updated", event: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/events/admin/:id
+exports.adminDeleteEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.query(`DELETE FROM events WHERE id = $1`, [id]);
+
+    res.json({ message: "Event deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+// POST /api/events/eo/:id/ticket-types
+exports.createTicketType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, quota } = req.body;
+
+    if (!name || !price || !quota) {
+      return res.status(400).json({ message: "name, price, quota wajib diisi" });
+    }
+
+    const result = await db.query(`
+      INSERT INTO ticket_types (event_id, name, price, quota)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `, [id, name, price, quota]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/events/eo/ticket-types/:ticketTypeId
+exports.updateTicketType = async (req, res) => {
+  try {
+    const { ticketTypeId } = req.params;
+    const { name, price, quota } = req.body;
+
+    const result = await db.query(`
+      UPDATE ticket_types
+      SET
+        name  = COALESCE($1, name),
+        price = COALESCE($2, price),
+        quota = COALESCE($3, quota)
+      WHERE id = $4
+      RETURNING *
+    `, [name || null, price || null, quota || null, ticketTypeId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Ticket type not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

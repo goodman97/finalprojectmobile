@@ -251,4 +251,100 @@ class EoEventService {
       throw Exception("Gagal download report");
     }
   }
+
+  // GET ticket types
+static Future<List<dynamic>> getTicketTypes(
+  String eventId,
+) async {
+  final response = await http.get(
+    Uri.parse(
+      "${ApiConfig.baseUrl}/api/events/$eventId/ticket-types",
+    ),
+  );
+
+  print(
+    "GET TICKET TYPES: ${response.statusCode}",
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    "Failed load ticket types",
+  );
+}
+
+// CREATE ticket type
+static Future<void> createTicketType({
+  required String eventId,
+  required String name,
+  required String price,
+  required String quota,
+  }) async {
+    final token =
+        await StorageService.getToken();
+
+    final response = await http.post(
+      Uri.parse(
+        "${ApiConfig.baseUrl}/api/events/eo/$eventId/ticket-types",
+      ),
+      headers: {
+        "Authorization":
+            "Bearer $token",
+        "Content-Type":
+            "application/json",
+      },
+      body: jsonEncode({
+        "name": name,
+        "price": price,
+        "quota": quota,
+      }),
+    );
+
+    print(
+      "CREATE TICKET TYPE: ${response.statusCode}",
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception(
+        "Failed create ticket type",
+      );
+    }
+  }
+
+  static Future<void> updateTicketType({
+    required String ticketTypeId,
+    required String name,
+    required String price,
+    required String quota,
+  }) async {
+    final token =
+        await StorageService.getToken();
+
+    final response = await http.put(
+      Uri.parse(
+        "${ApiConfig.baseUrl}/api/events/eo/ticket-types/$ticketTypeId",
+      ),
+      headers: {
+        "Authorization": "Bearer $token",
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "name": name,
+        "price": price,
+        "quota": quota,
+      }),
+    );
+
+    print(
+      "UPDATE TICKET TYPE: ${response.statusCode}",
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        "Failed update ticket type",
+      );
+    }
+  }
 }

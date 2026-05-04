@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:finalproject/services/eo_event_service.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_create_event.dart';
+import 'package:finalproject/features/auth/screens/eo/eo_manage_ticket_types.dart';
 
 final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
 
@@ -19,6 +20,7 @@ class _EoEventDetailState extends State<EoEventDetail> {
   Map<String, dynamic>? event;
   List transactions = [];
   bool isLoading = true;
+  int selectedTab = 0;
 
   @override
   void initState() {
@@ -87,7 +89,7 @@ class _EoEventDetailState extends State<EoEventDetail> {
           SingleChildScrollView(
             child: Column(
               children: [
-                // ── Hero Image ──────────────────────────────────────────
+                // Hero Image
                 Stack(
                   children: [
                     SizedBox(
@@ -158,7 +160,7 @@ class _EoEventDetailState extends State<EoEventDetail> {
                   ],
                 ),
 
-                // ── Content ─────────────────────────────────────────────
+                // Content
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
                   child: Column(
@@ -190,26 +192,26 @@ class _EoEventDetailState extends State<EoEventDetail> {
                               style: const TextStyle(color: Colors.grey),
                             ),
                             const SizedBox(height: 16),
-                            _infoRow(Icons.calendar_today, "Tanggal",
+                            _infoRow(Icons.calendar_today, "Date",
                                 _fmtDateShort(e["start_date"])),
                             const SizedBox(height: 8),
-                            _infoRow(Icons.location_on, "Lokasi",
+                            _infoRow(Icons.location_on, "Location",
                                 e["address"] ?? "-"),
                             const SizedBox(height: 8),
-                            _infoRow(Icons.attach_money, "Harga",
+                            _infoRow(Icons.attach_money, "Price",
                                 _rupiah.format(
                                     double.tryParse(e["price"]?.toString() ?? "0") ?? 0)),
                             const SizedBox(height: 16),
                             const Divider(),
                             const SizedBox(height: 12),
-                            const Text("Tentang Event",
+                            const Text("About the Event",
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
                                     color: Color(0xFF2F3E2F))),
                             const SizedBox(height: 8),
                             Text(
-                              e["description"] ?? "Tidak ada deskripsi.",
+                              e["description"] ?? "No descriptions yet.",
                               style: const TextStyle(
                                   color: Colors.black54, height: 1.5),
                             ),
@@ -222,7 +224,7 @@ class _EoEventDetailState extends State<EoEventDetail> {
                       // Stats cards
                       Row(
                         children: [
-                          _statsCard("Terjual", "$sold / $quota",
+                          _statsCard("Sold", "$sold / $quota",
                               Icons.confirmation_num_outlined,
                               const Color(0xFFE4572E)),
                           const SizedBox(width: 10),
@@ -234,51 +236,58 @@ class _EoEventDetailState extends State<EoEventDetail> {
 
                       const SizedBox(height: 12),
 
-                      // Fill progress
+                      // Sales Statistic
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black12, blurRadius: 6)
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 6,
+                            )
                           ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text("Kapasitas",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF2F3E2F))),
-                                Text("$fillPct%",
-                                    style: TextStyle(
-                                        color: fillPct >= 80
-                                            ? const Color(0xFFE4572E)
-                                            : const Color(0xFF2F3E2F),
-                                        fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: LinearProgressIndicator(
-                                value: fillPct / 100,
-                                minHeight: 10,
-                                color: fillPct >= 80
-                                    ? const Color(0xFFE4572E)
-                                    : const Color(0xFF2F3E2F),
-                                backgroundColor: Colors.grey.shade200,
+                            const Text(
+                              "Sales Statistics",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2F3E2F),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "$sold dari $quota tiket terjual",
-                              style: const TextStyle(
-                                  color: Colors.grey, fontSize: 12),
+
+                            const SizedBox(height: 16),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _miniStat(
+                                    "Today",
+                                    "${transactions.length}",
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+
+                                Expanded(
+                                  child: _miniStat(
+                                    "This Week",
+                                    "${transactions.length}",
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+
+                                Expanded(
+                                  child: _miniStat(
+                                    "This Month",
+                                    "$sold",
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -286,108 +295,37 @@ class _EoEventDetailState extends State<EoEventDetail> {
 
                       const SizedBox(height: 16),
 
-                      // Recent transactions
-                      const Text("Transaksi Terkini",
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2F3E2F))),
-                      const SizedBox(height: 10),
-
-                      transactions.isEmpty
-                          ? Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: const Center(
-                                  child: Text("Belum ada transaksi",
-                                      style:
-                                          TextStyle(color: Colors.grey))),
-                            )
-                          : Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                boxShadow: const [
-                                  BoxShadow(
-                                      color: Colors.black12, blurRadius: 6)
-                                ],
-                              ),
-                              child: Column(
-                                children: transactions
-                                    .asMap()
-                                    .entries
-                                    .map((entry) {
-                                  final i = entry.key;
-                                  final tx = entry.value;
-                                  return Column(
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 12),
-                                        child: Row(
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 18,
-                                              backgroundColor:
-                                                  const Color(0xFFF5F1E8),
-                                              child: Text(
-                                                (tx["buyer_name"] ?? "?")
-                                                    .toString()
-                                                    .substring(0, 1)
-                                                    .toUpperCase(),
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold,
-                                                    color:
-                                                        Color(0xFF2F3E2F)),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    tx["buyer_name"] ?? "-",
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: Color(
-                                                            0xFF2F3E2F)),
-                                                  ),
-                                                  Text(
-                                                    _fmtDate(tx["created_at"]),
-                                                    style: const TextStyle(
-                                                        color: Colors.grey,
-                                                        fontSize: 11),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Text(
-                                              _rupiah.format(double.tryParse(
-                                                      tx["amount"]?.toString() ??
-                                                          "0") ??
-                                                  0),
-                                              style: const TextStyle(
-                                                  color: Color(0xFFE4572E),
-                                                  fontWeight:
-                                                      FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (i < transactions.length - 1)
-                                        const Divider(height: 1, indent: 54),
-                                    ],
-                                  );
-                                }).toList(),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _tabButton(
+                                "Overview",
+                                0,
                               ),
                             ),
+                            Expanded(
+                              child: _tabButton(
+                                "Buyers (${transactions.length})",
+                                1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      selectedTab == 0
+                        ? _overviewSection()
+                        : _buyersSection(),
+                      const SizedBox(height: 10),
+
                     ],
                   ),
                 ),
@@ -490,6 +428,193 @@ class _EoEventDetailState extends State<EoEventDetail> {
             Text(label,
                 style: const TextStyle(color: Colors.grey, fontSize: 11)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStat(
+    String label,
+    String value,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: 16,
+        horizontal: 12,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F1E8),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2F3E2F),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _overviewSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ManageTicketTypesPage(
+                      eventId: widget.eventId,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE4572E),
+              ),
+              child: const Text(
+                "Manage Ticket Types",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                await EoEventService.downloadCSVReport();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2F3E2F),
+              ),
+              child: const Text(
+                "Download Report",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buyersSection() {
+    if (transactions.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Center(
+          child: Text("No buyers yet"),
+        ),
+      );
+    }
+
+    return Column(
+      children: transactions.map((tx) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tx["buyer_name"] ?? "-",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      tx["buyer_email"] ?? "-",
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                _rupiah.format(
+                  double.tryParse(
+                        tx["amount"]?.toString() ?? "0",
+                      ) ??
+                      0,
+                ),
+                style: const TextStyle(
+                  color: Color(0xFFE4572E),
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _tabButton(
+    String title,
+    int index,
+  ) {
+    final active = selectedTab == index;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedTab = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          vertical: 14,
+        ),
+        decoration: BoxDecoration(
+          color: active
+              ? const Color(0xFFE4572E)
+              : Colors.transparent,
+          borderRadius:
+              BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              color: active
+                  ? Colors.white
+                  : const Color(0xFF2F3E2F),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );

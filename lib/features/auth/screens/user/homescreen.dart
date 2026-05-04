@@ -4,6 +4,7 @@ import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/event_detail.dart';
 import 'package:finalproject/features/auth/screens/user/navigation.dart';
 import 'package:finalproject/features/auth/screens/user/notification.dart';
+import 'package:finalproject/features/auth/screens/chat/chat_bot_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -81,31 +82,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
 
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "Discover",
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF2F3E2F),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              "Discover",
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight:
+                                    FontWeight.bold,
+                                color:
+                                    Color(0xFF2F3E2F),
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            "Find your next experience",
-                            style: TextStyle(color: Colors.black54),
-                          ),
-                        ],
+                            SizedBox(height: 4),
+                            Text(
+                              "Find your next experience",
+                              style: TextStyle(
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+
+                      // CHATBOT ICON
+                      IconButton(
+                        icon: const Icon(
+                          Icons.smart_toy_outlined,
+                          color: Color(0xFF2F3E2F),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const ChatBotPage(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // NOTIFICATION ICON
                       Stack(
                         children: [
                           IconButton(
                             icon: const Icon(
                               Icons.notifications_none,
+                              color:
+                                  Color(0xFF2F3E2F),
                             ),
                             onPressed: () async {
                               await Navigator.push(
@@ -129,9 +157,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Container(
                                 width: 10,
                                 height: 10,
-                                decoration: const BoxDecoration(
+                                decoration:
+                                    const BoxDecoration(
                                   color: Colors.red,
-                                  shape: BoxShape.circle,
+                                  shape:
+                                      BoxShape.circle,
                                 ),
                               ),
                             )
