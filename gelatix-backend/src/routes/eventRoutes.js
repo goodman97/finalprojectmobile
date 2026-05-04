@@ -6,7 +6,8 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
-// EO PRIVATE ROUTES
+
+// ── EO / Organizer routes ─────────────────────────
 
 // dashboard
 router.get(
@@ -24,20 +25,13 @@ router.get(
   ctrl.getMyEvents
 );
 
-// download report
+// IMPORTANT:
+// harus di atas /eo/:id
 router.get(
   "/eo/download-report",
   auth,
   role(["organizer", "admin"]),
   ctrl.downloadAnalyticsCSV
-);
-
-// detail event eo
-router.get(
-  "/eo/:id",
-  auth,
-  role(["organizer", "admin"]),
-  ctrl.getEoEventDetail
 );
 
 // create event
@@ -66,6 +60,7 @@ router.post(
   ctrl.createTicketType
 );
 
+// update ticket type
 router.put(
   "/eo/ticket-types/:ticketTypeId",
   auth,
@@ -73,14 +68,50 @@ router.put(
   ctrl.updateTicketType
 );
 
-// validation
+// detail event
+// taruh paling bawah agar route spesifik di atas aman
 router.get(
-  "/tickets/validation-stats", 
-  auth, 
+  "/eo/:id",
+  auth,
+  role(["organizer", "admin"]),
+  ctrl.getEoEventDetail
+);
+
+
+// ── Admin routes ─────────────────────────
+
+router.get(
+  "/admin/all",
+  auth,
+  role(["admin"]),
+  ctrl.adminGetAllEvents
+);
+
+router.patch(
+  "/admin/:id/status",
+  auth,
+  role(["admin"]),
+  ctrl.adminToggleStatus
+);
+
+router.delete(
+  "/admin/:id",
+  auth,
+  role(["admin"]),
+  ctrl.adminDeleteEvent
+);
+
+
+// ── Validation ─────────────────────────
+
+router.get(
+  "/tickets/validation-stats",
+  auth,
   ctrl.getValidationStats
 );
 
-// PUBLIC ROUTES
+
+// ── Public routes ─────────────────────────
 
 router.get("/", ctrl.getAllEvents);
 router.get("/:id", ctrl.getEventById);

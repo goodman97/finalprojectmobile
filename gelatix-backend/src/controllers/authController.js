@@ -62,6 +62,12 @@ exports.login = async (req, res) => {
     return res.status(400).json({ message: "User not found" });
   }
 
+  // Check if user is suspended (using status column if exists, fallback to is_suspended)
+  const status = user.rows[0].status || (user.rows[0].is_suspended ? 'suspended' : 'active');
+  if (status === 'suspended') {
+    return res.status(403).json({ message: "Akun Anda telah di-suspend. Hubungi admin untuk informasi lebih lanjut." });
+  }
+
   const valid = await bcrypt.compare(password, user.rows[0].password);
 
   if (!valid) {

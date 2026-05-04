@@ -290,22 +290,13 @@ exports.createEvent = async (req, res) => {
       longitude || null
     ]);
 
-    const createdEvent = result.rows[0];
+    const newEvent = result.rows[0];
 
+    // Auto-create default ticket type menggunakan price & quota dari event
     await db.query(`
-      INSERT INTO ticket_types (
-        event_id,
-        name,
-        price,
-        quota
-      )
-      VALUES ($1,$2,$3,$4)
-    `, [
-      createdEvent.id,
-      "Regular Ticket",
-      createdEvent.price,
-      createdEvent.quota
-    ]);
+      INSERT INTO ticket_types (event_id, name, price, quota)
+      VALUES ($1, 'General Admission', $2, $3)
+    `, [newEvent.id, price, quota]);
 
     res.status(201).json({
       message: "Event berhasil dibuat",
@@ -572,6 +563,77 @@ exports.downloadAnalyticsCSV = async (req, res) => {
   }
 };
 
+// ── ADMIN ENDPOINTS ───────────────────────────────────────────────────────────
+
+// GET /api/events/admin/all
+exports.adminGetAllEvents = async (req, res) => {
+  try {
+    const q = req.query.q ? `%${req.query.q}%` : "%";
+    const status = req.query.status;
+
+    const result = await db.query(`
+      SELECT
+        e.id,
+        e.name,
+        e.start_date,
+        e.address,
+        e.status,
+        e.price,
+        e.quota,
+        e.event_image,
+        u.name AS organizer_name,
+        COUNT(t.id) AS sold
+      FROM events e
+      LEFT JOIN users u ON u.id = e.organizer_id
+      LEFT JOIN tickets t ON t.event_id = e.id AND t.status = 'active'
+      WHERE
+        (LOWER(e.name) LIKE LOWER($1) OR LOWER(e.address) LIKE LOWER($1))
+        ${status ? "AND e.status = $2" : ""}
+      GROUP BY e.id, u.name
+      ORDER BY e.start_date DESC
+    `, status ? [q, status] : [q]);
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PATCH /api/events/admin/:id/status
+exports.adminToggleStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body; // 'active' | 'inactive'
+
+    const result = await db.query(
+      `UPDATE events SET status = $1 WHERE id = $2 RETURNING id, name, status`,
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.json({ message: "Status updated", event: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/events/admin/:id
+exports.adminDeleteEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.query(`DELETE FROM events WHERE id = $1`, [id]);
+
+    res.json({ message: "Event deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
 // POST /api/events/eo/:id/ticket-types
 exports.createTicketType = async (req, res) => {
   try {
@@ -579,41 +641,22 @@ exports.createTicketType = async (req, res) => {
     const { name, price, quota } = req.body;
 
     if (!name || !price || !quota) {
-      return res.status(400).json({
-        message: "Semua field wajib diisi"
-      });
+      return res.status(400).json({ message: "name, price, quota wajib diisi" });
     }
 
     const result = await db.query(`
-      INSERT INTO ticket_types (
-        event_id,
-        name,
-        price,
-        quota
-      )
-      VALUES ($1,$2,$3,$4)
+      INSERT INTO ticket_types (event_id, name, price, quota)
+      VALUES ($1, $2, $3, $4)
       RETURNING *
-    `, [
-      id,
-      name,
-      price,
-      quota
-    ]);
+    `, [id, name, price, quota]);
 
-    res.status(201).json({
-      message: "Ticket type berhasil dibuat",
-      ticket: result.rows[0]
-    });
-
+    res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("CREATE TICKET TYPE ERROR:", err);
-
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
+// PUT /api/events/eo/ticket-types/:ticketTypeId
 exports.updateTicketType = async (req, res) => {
   try {
     const { ticketTypeId } = req.params;
@@ -622,35 +665,20 @@ exports.updateTicketType = async (req, res) => {
     const result = await db.query(`
       UPDATE ticket_types
       SET
-        name = COALESCE($1, name),
+        name  = COALESCE($1, name),
         price = COALESCE($2, price),
         quota = COALESCE($3, quota)
       WHERE id = $4
       RETURNING *
-    `, [
-      name || null,
-      price || null,
-      quota || null,
-      ticketTypeId
-    ]);
+    `, [name || null, price || null, quota || null, ticketTypeId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "Ticket type not found"
-      });
+      return res.status(404).json({ message: "Ticket type not found" });
     }
 
-    res.json({
-      message: "Ticket type updated",
-      ticket: result.rows[0]
-    });
-
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
