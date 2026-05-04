@@ -37,7 +37,7 @@ class _TicketPurchaseState
   int userPoints = 0;
   int pointsUsed = 0;
 
-  // ── Currency Conversion ──────────────────────────
+  // Currency Conversion
   static const String _exchangeApiKey = 'cc924ed5bb5159482cfc6dca';
   static const String _exchangeBaseUrl =
       'https://v6.exchangerate-api.com/v6/$_exchangeApiKey';
@@ -59,7 +59,6 @@ class _TicketPurchaseState
   double _exchangeRate = 1.0;      // IDR → selectedCurrency
   bool _isLoadingRate = false;
   String? _rateError;
-  // ────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -215,7 +214,6 @@ class _TicketPurchaseState
       ),
     );
   }
-  // ────────────────────────────────────────────────
 
   Future<void> loadTicketTypes() async {
     try {
@@ -917,27 +915,22 @@ class _TicketPurchaseState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-          const Color(0xFFF5F1E8),
+      backgroundColor: const Color(0xFFF5F1E8),
       appBar: AppBar(
-        title: const Text(
-            "Purchase Ticket"),
+        title: const Text("Purchase Ticket"),
       ),
       body: isLoading
           ? const Center(
-              child:
-                  CircularProgressIndicator(),
+              child: CircularProgressIndicator(),
             )
           : SingleChildScrollView(
-              padding:
-                  const EdgeInsets.all(
-                      16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // ── Currency Selector Card ─────────────
+                  // Currency Card
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
@@ -953,114 +946,181 @@ class _TicketPurchaseState
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.currency_exchange,
-                                color: Color(0xFFE4572E), size: 20),
+                            Icon(
+                              Icons.currency_exchange,
+                              color: Color(0xFFE4572E),
+                            ),
                             SizedBox(width: 8),
                             Text(
-                              'Konversi Mata Uang',
+                              "Konversi Mata Uang",
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
-                          child: OutlinedButton.icon(
+                          child: OutlinedButton(
                             onPressed: _showCurrencyPicker,
-                            icon: const Icon(Icons.swap_horiz,
-                                color: Color(0xFFE4572E)),
-                            label: Text(
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: Color(0xFFE4572E),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
                               _currencies[_selectedCurrency] ??
                                   _selectedCurrency,
                               style: const TextStyle(
-                                  color: Color(0xFFE4572E)),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                  color: Color(0xFFE4572E)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                color: Color(0xFFE4572E),
                               ),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12),
                             ),
                           ),
                         ),
-                        if (_isLoadingRate)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Center(
-                              child: SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFFE4572E),
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (_rateError != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              _rateError!,
-                              style: const TextStyle(
-                                  color: Colors.red, fontSize: 12),
-                            ),
-                          ),
-                        if (!_isLoadingRate &&
-                            _selectedCurrency != 'IDR' &&
-                            _rateError == null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text(
-                              '1 IDR = ${_formatConverted(_exchangeRate)} $_selectedCurrency',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
                       ],
                     ),
                   ),
-                  // ─────────────────────────────────────
 
                   const SizedBox(height: 16),
 
+                  // Main Purchase Card
                   Container(
-                    padding:
-                        const EdgeInsets
-                            .all(16),
-                    decoration:
-                        BoxDecoration(
-                      color:
-                          Colors.white,
-                      borderRadius:
-                          BorderRadius
-                              .circular(
-                                  20),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F8F8),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
                       children: [
-                        _summaryRow(
-                          "Ticket Price",
-                          _convertAmount(ticketPrice),
-                        ),
-                        _summaryRow(
-                          "Quantity",
-                          "$quantity",
-                        ),
+                        // Ticket Type
 
                         const SizedBox(height: 20),
 
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.confirmation_number_outlined,
+                                    color: Color(0xFFE4572E),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Choose Ticket Type",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2F3E2F),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              if (ticketTypes.isEmpty)
+                                const Text(
+                                  "No ticket types available",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                  ),
+                                )
+                              else
+                                DropdownButtonFormField<String>(
+                                value: selectedTypeId,
+                                dropdownColor: Colors.white,
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: Color(0xFF2F3E2F),
+                                ),
+                                style: const TextStyle(
+                                  color: Color(0xFF2F3E2F),
+                                  fontSize: 16,
+                                ),
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: const Color(0xFFF5F1E8),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder:
+                                      OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder:
+                                      OutlineInputBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(16),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFE4572E),
+                                    ),
+                                  ),
+                                ),
+                                items: ticketTypes.map((ticket) {
+                                  return DropdownMenuItem<String>(
+                                    value:
+                                        ticket["id"].toString(),
+                                    child: Text(
+                                      "${ticket["name"]} - Rp ${ticket["price"]}",
+                                      style: const TextStyle(
+                                        color: Color(0xFF2F3E2F),
+                                        fontWeight:
+                                            FontWeight.w500,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedTypeId = value;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        _summaryRow(
+                          "Ticket Price",
+                          _convertAmount(
+                              ticketPrice),
+                        ),
+
+                        _summaryRow(
+                          "Quantity",
+                          "$quantity",
+                        ),
+
+                        const SizedBox(
+                            height: 20),
+
+                        // Quantity
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -1076,12 +1136,11 @@ class _TicketPurchaseState
                               const Text(
                                 "Quantity",
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 16),
-
+                              const SizedBox(height: 20),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -1096,15 +1155,13 @@ class _TicketPurchaseState
                                         : null,
                                     icon: const Icon(Icons.remove),
                                   ),
-
                                   Text(
                                     "$quantity",
                                     style: const TextStyle(
-                                      fontSize: 28,
+                                      fontSize: 40,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-
                                   IconButton(
                                     onPressed: () {
                                       setState(() {
@@ -1114,7 +1171,7 @@ class _TicketPurchaseState
                                     icon: const Icon(Icons.add),
                                   ),
                                 ],
-                              ),
+                              )
                             ],
                           ),
                         ),
@@ -1122,62 +1179,34 @@ class _TicketPurchaseState
                         const SizedBox(
                             height: 20),
 
-                        const SizedBox(height: 20),
-
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 6,
-                              )
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Voucher Discount",
+                        // Voucher Button
+                        SizedBox(
+                          width:
+                              double.infinity,
+                          child:
+                             ElevatedButton.icon(
+                              onPressed: showVoucherPopup,
+                              icon: const Icon(
+                                Icons.local_offer,
+                                color: Colors.white,
+                              ),
+                              label: const Text(
+                                "Choose Voucher",
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed:
-                                      vouchers.isEmpty
-                                          ? null
-                                          : showVoucherPopup,
-                                  style:
-                                      ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFFE4572E),
-                                  ),
-                                  icon: const Icon(
-                                    Icons.discount,
-                                    color: Colors.white,
-                                  ),
-                                  label: Text(
-                                    appliedVoucherCode == null
-                                        ? "Choose Voucher"
-                                        : "$discountPercent% Voucher Applied",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color(0xFFE4572E),
+                                minimumSize:
+                                    const Size(double.infinity, 50),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(16),
                                 ),
-                              )
-                            ],
-                          ),
+                              ),
+                            ),
                         ),
 
                         const SizedBox(height: 20),
@@ -1206,115 +1235,72 @@ class _TicketPurchaseState
                                   const Text(
                                     "Use Points",
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      fontWeight:
+                                          FontWeight.bold,
                                     ),
                                   ),
                                   Text(
                                     "$userPoints pts",
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
                                       color: Color(0xFFE4572E),
+                                      fontWeight:
+                                          FontWeight.bold,
                                     ),
                                   ),
                                 ],
                               ),
-
-                              const SizedBox(height: 16),
-
                               Slider(
                                 value: pointsUsed.toDouble(),
                                 min: 0,
                                 max: userPoints.toDouble(),
-                                divisions:
-                                    userPoints > 0
-                                        ? userPoints
-                                        : 1,
                                 activeColor:
                                     const Color(0xFFE4572E),
-                                onChanged: userPoints == 0
-                                    ? null
-                                    : (value) {
-                                        setState(() {
-                                          pointsUsed =
-                                              value.toInt();
-                                        });
-                                      },
+                                onChanged: (value) {
+                                  setState(() {
+                                    pointsUsed = value.toInt();
+                                  });
+                                },
                               ),
-
                               Center(
                                 child: Text(
                                   "Using $pointsUsed points",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
                                 ),
-                              )
+                              ),
                             ],
                           ),
                         ),
 
+                        const SizedBox(
+                            height: 20),
+
                         _summaryRow(
                           "Voucher Discount",
-                          "-${_convertAmount(voucherDiscount)}",
+                          "-Rp $voucherDiscount",
                         ),
 
                         _summaryRow(
                           "Points Used",
-                          "-${_convertAmount(finalPointsUsed)}",
+                          "-Rp $finalPointsUsed",
                         ),
 
                         _summaryRow(
                           "Service Fee",
-                          _convertAmount(5),
+                          "Rp 5",
                         ),
 
                         const Divider(),
 
-                        // Total with converted currency
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                "Total",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    _convertAmount(total),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: Color(0xFFE4572E),
-                                    ),
-                                  ),
-                                  if (_selectedCurrency != 'IDR')
-                                    Text(
-                                      'Rp ${_formatNumber(total)} IDR',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        _summaryRow(
+                          "Total",
+                          _convertAmount(
+                              total),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(
-                      height: 20),
+                  const SizedBox(height: 20),
 
                   SizedBox(
                     width:
@@ -1336,14 +1322,15 @@ class _TicketPurchaseState
                       child:
                           isProcessing
                               ? const CircularProgressIndicator(
-                                  color: Colors.white,
+                                  color: Colors
+                                      .white,
                                 )
                               : Text(
                                   "Purchase ${_convertAmount(total)}",
                                   style:
                                       const TextStyle(
-                                    color:
-                                        Colors.white,
+                                    color: Colors
+                                        .white,
                                   ),
                                 ),
                     ),
@@ -1381,9 +1368,6 @@ class _TicketPurchaseState
     );
   }
 }
-
-// ── QR Code Painter (no external package needed) ─────────────────────────────
-// Uses a pure-Dart QR encoder based on ISO 18004.
 
 class _DashedLinePainter extends CustomPainter {
   @override

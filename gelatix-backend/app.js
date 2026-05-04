@@ -15,6 +15,7 @@ app.use("/api/events", require("./src/routes/eventRoutes"));
 app.use("/api/tickets", require("./src/routes/ticketRoutes"));
 app.use("/api/market", require("./src/routes/marketRoutes"));
 app.use("/api/minigame", require("./src/routes/minigameRoutes"));
+app.use("/api/chat", require("./src/routes/chatRoutes"));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
