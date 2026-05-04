@@ -291,14 +291,6 @@ class _MarketState extends State<Market> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          categoryChip("All", true),
-                          categoryChip("Best Deals", false),
-                          categoryChip("Premium", false),
-                        ],
-                      )
                     ],
                   ),
                 ),

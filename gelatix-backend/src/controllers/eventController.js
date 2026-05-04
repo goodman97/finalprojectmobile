@@ -548,10 +548,7 @@ exports.downloadAnalyticsCSV = async (req, res) => {
       "Event Name,Start Date,Location,Price,Quota,Tickets Sold,Revenue\n";
 
     result.rows.forEach((row) => {
-      csv += `"${row.name}","${row.start_date}",
-      "${row.address}",${row.price},
-      ${row.quota},${row.tickets_sold},
-      ${row.revenue}\n`;
+      csv += `"${row.name}","${row.start_date}","${row.address}",${row.price},${row.quota},${row.tickets_sold},${row.revenue}\n`;
     });
 
     res.setHeader(
@@ -567,7 +564,8 @@ exports.downloadAnalyticsCSV = async (req, res) => {
     res.status(200).send(csv);
 
   } catch (err) {
-    console.error("CSV ERROR:", err);
+    console.error("DOWNLOAD CSV ERROR:", err);
+
     res.status(500).json({
       message: err.message
     });

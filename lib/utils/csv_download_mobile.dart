@@ -5,16 +5,28 @@ Future<void> downloadCSV(
   List<int> bytes,
   String fileName,
 ) async {
-  final dir =
-      await getApplicationDocumentsDirectory();
+  try {
+    Directory? dir;
 
-  final file = File(
-    "${dir.path}/$fileName",
-  );
+    if (Platform.isAndroid) {
+      dir = await getExternalStorageDirectory();
+    } else {
+      dir = await getApplicationDocumentsDirectory();
+    }
 
-  await file.writeAsBytes(bytes);
+    if (dir == null) {
+      throw Exception("Directory not found");
+    }
 
-  print(
-    "CSV saved at: ${file.path}",
-  );
+    final file = File(
+      "${dir.path}/$fileName",
+    );
+
+    await file.writeAsBytes(bytes);
+
+    print("CSV saved at: ${file.path}");
+  } catch (e) {
+    print("CSV SAVE ERROR: $e");
+    rethrow;
+  }
 }

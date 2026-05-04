@@ -42,12 +42,6 @@ class _EoEventDetailState extends State<EoEventDetail> {
     }
   }
 
-  String _fmtDate(dynamic d) {
-    if (d == null) return "-";
-    try { return DateFormat("MMM d, yyyy · HH:mm").format(DateTime.parse(d.toString())); }
-    catch (_) { return "-"; }
-  }
-
   String _fmtDateShort(dynamic d) {
     if (d == null) return "-";
     try { return DateFormat("MMM d, yyyy").format(DateTime.parse(d.toString())); }
@@ -96,7 +90,6 @@ class _EoEventDetailState extends State<EoEventDetail> {
     final sold     = int.tryParse(e["sold"]?.toString() ?? "0") ?? 0;
     final quota    = int.tryParse(e["quota"]?.toString() ?? "0") ?? 1;
     final revenue  = double.tryParse(e["revenue"]?.toString() ?? "0") ?? 0;
-    final fillPct  = int.tryParse(e["fill_percent"]?.toString() ?? "0") ?? 0;
     final imgUrl   = _imgUrl(e["event_image"]);
     final isActive = e["status"] == "active";
 

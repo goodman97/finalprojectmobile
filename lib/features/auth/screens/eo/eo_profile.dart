@@ -184,8 +184,6 @@ class _EOProfileState extends State<EOProfile> {
                   }
                 },
               ),
-              //menuItem(Icons.settings, "Account Settings"),
-              menuItem(Icons.notifications, "Notifications", badge: "2"),
             ]),
 
             const SizedBox(height: 20),
@@ -204,7 +202,7 @@ class _EOProfileState extends State<EOProfile> {
                         .showSnackBar(
                       const SnackBar(
                         content: Text(
-                          "CSV berhasil didownload",
+                          "CSV has been downloaded successfully!",
                         ),
                       ),
                     );
@@ -213,7 +211,7 @@ class _EOProfileState extends State<EOProfile> {
                         .showSnackBar(
                       SnackBar(
                         content: Text(
-                          "Gagal download CSV: $e",
+                          "Cannot download CSV: $e",
                         ),
                       ),
                     );

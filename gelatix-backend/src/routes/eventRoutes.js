@@ -24,6 +24,14 @@ router.get(
   ctrl.getMyEvents
 );
 
+// download report
+router.get(
+  "/eo/download-report",
+  auth,
+  role(["organizer", "admin"]),
+  ctrl.downloadAnalyticsCSV
+);
+
 // detail event eo
 router.get(
   "/eo/:id",
@@ -63,14 +71,6 @@ router.put(
   auth,
   role(["organizer", "admin"]),
   ctrl.updateTicketType
-);
-
-// download report
-router.get(
-  "/eo/download-report",
-  auth,
-  role(["organizer", "admin"]),
-  ctrl.downloadAnalyticsCSV
 );
 
 // validation

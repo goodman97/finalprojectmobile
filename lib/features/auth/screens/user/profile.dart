@@ -540,43 +540,6 @@ class _ProfileState extends State<Profile> {
 
                   const SizedBox(height: 20),
 
-                  /// SUPPORT
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      "SUPPORT",
-                      style: TextStyle(
-                        color: Colors.grey.shade700,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    child: modernMenuItem(
-                      icon: Icons.help,
-                      title: "Help Center",
-                      onTap: () {
-                        /*ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Help Center coming soon",
-                            ),
-                          ),
-                        );*/
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
                   /// LOGOUT
                   OutlinedButton.icon(
                     onPressed: () {

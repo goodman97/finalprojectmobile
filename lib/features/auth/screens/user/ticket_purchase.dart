@@ -576,9 +576,13 @@ class _TicketPurchaseState
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               label,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
+
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -597,25 +601,26 @@ class _TicketPurchaseState
             version: QrVersions.auto,
             size: 200,
             backgroundColor: Colors.white,
-            eyeStyle: const QrEyeStyle(
-              eyeShape: QrEyeShape.square,
-              color: Color(0xFF1A1A2E),
-            ),
-            dataModuleStyle: const QrDataModuleStyle(
-              dataModuleShape: QrDataModuleShape.circle,
-              color: Color(0xFF1A1A2E),
-            ),
           ),
         ),
-        const SizedBox(height: 8),
-        SelectableText(
-          data,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade500,
-            fontFamily: 'monospace',
+
+        const SizedBox(height: 10),
+
+        // FIX overflow text
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            data,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade500,
+              fontFamily: 'monospace',
+            ),
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -982,6 +987,55 @@ class _TicketPurchaseState
                             ),
                           ),
                         ),
+
+                        if (_isLoadingRate)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 12),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFFE4572E),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Memuat kurs...",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        if (_rateError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _rateError!,
+                                    style: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
