@@ -6,6 +6,7 @@ import 'package:finalproject/services/storage_service.dart';
 import 'package:finalproject/services/validation_service.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_qr_scan.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:finalproject/utils/date_utils.dart';
 
 class OrganizerTickets extends StatefulWidget {
   const OrganizerTickets({super.key});
@@ -44,19 +45,7 @@ class _OrganizerTicketsState extends State<OrganizerTickets> {
     }
   }
 
-  String _timeAgo(dynamic d) {
-    if (d == null) return "";
-    try {
-      final dt = DateTime.parse(d.toString()).toLocal();
-      final diff = DateTime.now().difference(dt);
-      if (diff.inMinutes < 1) return "just now";
-      if (diff.inMinutes < 60) return "${diff.inMinutes} min ago";
-      if (diff.inHours < 24) return "${diff.inHours} hr ago";
-      return "${diff.inDays} days ago";
-    } catch (_) {
-      return "";
-    }
-  }
+  String _timeAgo(dynamic d) => AppDateUtils.timeAgo(d);
 
   @override
   Widget build(BuildContext context) {

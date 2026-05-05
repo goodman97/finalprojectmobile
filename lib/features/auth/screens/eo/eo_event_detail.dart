@@ -4,6 +4,7 @@ import 'package:finalproject/services/eo_event_service.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_create_event.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_manage_ticket_types.dart';
+import 'package:finalproject/utils/date_utils.dart';
 
 final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
 
@@ -42,17 +43,10 @@ class _EoEventDetailState extends State<EoEventDetail> {
     }
   }
 
-  String _fmtDate(dynamic d) {
-    if (d == null) return "-";
-    try { return DateFormat("MMM d, yyyy · HH:mm").format(DateTime.parse(d.toString())); }
-    catch (_) { return "-"; }
-  }
+  // Menampilkan tanggal + waktu yang sudah dikonversi ke timezone lokal device
+  String _fmtDate(dynamic d) => AppDateUtils.formatDateTime(d);
 
-  String _fmtDateShort(dynamic d) {
-    if (d == null) return "-";
-    try { return DateFormat("MMM d, yyyy").format(DateTime.parse(d.toString())); }
-    catch (_) { return "-"; }
-  }
+  String _fmtDateShort(dynamic d) => AppDateUtils.formatDate(d);
 
   String _imgUrl(dynamic img) {
     if (img == null || img.toString().isEmpty) {
@@ -210,8 +204,11 @@ class _EoEventDetailState extends State<EoEventDetail> {
                               style: const TextStyle(color: Colors.grey),
                             ),
                             const SizedBox(height: 16),
-                            _infoRow(Icons.calendar_today, "Date",
-                                _fmtDateShort(e["start_date"])),
+                            _infoRow(Icons.event_available, "Start",
+                                _fmtDate(e["start_date"])),
+                            const SizedBox(height: 8),
+                            _infoRow(Icons.event_busy, "End",
+                                _fmtDate(e["end_date"])),
                             const SizedBox(height: 8),
                             _infoRow(Icons.location_on, "Location",
                                 e["address"] ?? "-"),

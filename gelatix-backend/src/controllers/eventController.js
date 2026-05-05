@@ -1,10 +1,34 @@
 const db = require("../config/db");
 const path = require("path");
 
+// ─── HELPER FUNCTIONS ─────────────────────────────────────────────────────
+// Get user's timezone preference (default: 'Asia/Jakarta')
+const getUserTimezone = async (userId) => {
+  try {
+    if (!userId) return 'Asia/Jakarta';
+
+    const result = await db.query(
+      "SELECT timezone FROM users WHERE id = $1 LIMIT 1",
+      [userId]
+    );
+
+    return result.rows[0]?.timezone || 'Asia/Jakarta';
+  } catch (err) {
+    console.error("GET USER TIMEZONE ERROR:", err);
+    return 'Asia/Jakarta';
+  }
+};
+
+// Format timestamp with user's timezone
+const formatWithTimezone = (column, timezone = 'Asia/Jakarta') => {
+  return `TO_CHAR(${column} AT TIME ZONE '${timezone}', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
+};
+
 // GET /api/events/eo/dashboard
 exports.getEoDashboard = async (req, res) => {
   try {
     const organizerId = req.user.id;
+    const userTz = await getUserTimezone(organizerId);
 
     const statsRes = await db.query(`
       SELECT
@@ -25,7 +49,7 @@ exports.getEoDashboard = async (req, res) => {
       SELECT
         e.id,
         e.name,
-        e.start_date,
+        TO_CHAR(e.start_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
         e.address,
         e.event_image,
         e.quota,
@@ -89,17 +113,31 @@ exports.getMyEvents = async (req, res) => {
   try {
     const organizerId = req.user.id;
     const q = req.query.q || "";
+    const userTz = await getUserTimezone(organizerId);
 
     const result = await db.query(`
       SELECT
-        e.*,
+        e.id,
+        e.name,
+        e.address,
+        e.date,
+        e.price,
+        e.quota,
+        e.description,
+        e.organizer_id,
+        e.status,
+        e.event_image,
+        e.latitude,
+        e.longitude,
+        e.created_at,
+        e.updated_at,
+        TO_CHAR(e.start_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
+        TO_CHAR(e.end_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
 
-        -- jumlah tiket terjual valid
         COUNT(DISTINCT t.id) FILTER (
           WHERE t.status IN ('active', 'used', 'resale')
         ) AS sold,
 
-        -- total revenue transaksi sukses
         COALESCE(
           SUM(tr.amount) FILTER (
             WHERE tr.status = 'success'
@@ -129,10 +167,7 @@ exports.getMyEvents = async (req, res) => {
 
   } catch (error) {
     console.log("GET MY EVENTS ERROR:", error);
-
-    res.status(500).json({
-      message: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -141,10 +176,26 @@ exports.getEoEventDetail = async (req, res) => {
   try {
     const { id } = req.params;
     const organizerId = req.user.id;
+    const userTz = await getUserTimezone(organizerId);
 
     const result = await db.query(`
       SELECT
-        e.*,
+        e.id,
+        e.name,
+        e.address,
+        e.date,
+        e.price,
+        e.quota,
+        e.description,
+        e.organizer_id,
+        e.status,
+        e.event_image,
+        e.latitude,
+        e.longitude,
+        e.created_at,
+        e.updated_at,
+        TO_CHAR(e.start_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
+        TO_CHAR(e.end_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
         u.name AS organizer_name,
 
         (
@@ -180,8 +231,7 @@ exports.getEoEventDetail = async (req, res) => {
         ) AS fill_percent
 
       FROM events e
-      LEFT JOIN users u
-        ON e.organizer_id = u.id
+      LEFT JOIN users u ON e.organizer_id = u.id
 
       WHERE e.id = $1
         AND e.organizer_id = $2
@@ -190,9 +240,7 @@ exports.getEoEventDetail = async (req, res) => {
     `, [id, organizerId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "Event not found"
-      });
+      return res.status(404).json({ message: "Event not found" });
     }
 
     const txRes = await db.query(`
@@ -225,6 +273,9 @@ exports.createEvent = async (req, res) => {
   try {
     const organizerId = req.user.id;
 
+    // ── Ambil timezone user ──────────────────────────────────────────────────
+    const userTz = await getUserTimezone(organizerId);
+
     const {
       name,
       address,
@@ -239,21 +290,22 @@ exports.createEvent = async (req, res) => {
     } = req.body;
 
     if (!name || !address || !start_date || !price || !quota) {
-      return res.status(400).json({
-        message: "Semua field wajib diisi"
-      });
+      return res.status(400).json({ message: "Semua field wajib diisi" });
     }
 
-    let startDateTime = start_date;
+    // ── Gabungkan tanggal + jam tanpa asumsi UTC ─────────────────────────────
+    // Format: 'YYYY-MM-DD HH24:MI:SS' — PostgreSQL akan interpret sesuai userTz
+    let startDateTime = start_time
+      ? `${start_date} ${start_time}:00`
+      : `${start_date} 00:00:00`;
 
-    if (start_time) {
-      startDateTime = `${start_date}T${start_time}:00`;
-    }
+    let endDateTime = end_date ? `${end_date} 00:00:00` : null;
 
     const imageName = req.file
       ? req.file.destination.replace(/^\/+/, '') + req.file.filename
       : null;
 
+    // ── INSERT: konversi waktu lokal → UTC via AT TIME ZONE ─────────────────
     const result = await db.query(`
       INSERT INTO events (
         name,
@@ -271,15 +323,18 @@ exports.createEvent = async (req, res) => {
         longitude
       )
       VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+        $1, $2, $3,
+        ($4::timestamp AT TIME ZONE $14),
+        ($5::timestamp AT TIME ZONE $14),
+        $6, $7, $8, $9, $10, $11, $12, $13
       )
       RETURNING *
     `, [
       name,
       address,
-      startDateTime,
-      startDateTime,
-      end_date || null,
+      startDateTime,         // $3  — kolom date (legacy)
+      startDateTime,         // $4  — start_date, dikonversi ke UTC
+      endDateTime,           // $5  — end_date, dikonversi ke UTC
       price,
       quota,
       description || null,
@@ -287,12 +342,12 @@ exports.createEvent = async (req, res) => {
       "active",
       imageName,
       latitude || null,
-      longitude || null
+      longitude || null,
+      userTz,                // $14 — timezone user, misal 'Asia/Jakarta'
     ]);
 
     const newEvent = result.rows[0];
 
-    // Auto-create default ticket type menggunakan price & quota dari event
     await db.query(`
       INSERT INTO ticket_types (event_id, name, price, quota)
       VALUES ($1, 'General Admission', $2, $3)
@@ -300,7 +355,7 @@ exports.createEvent = async (req, res) => {
 
     res.status(201).json({
       message: "Event berhasil dibuat",
-      event: createdEvent
+      event: newEvent,
     });
 
   } catch (err) {
@@ -315,15 +370,16 @@ exports.editEvent = async (req, res) => {
     const { id } = req.params;
     const organizerId = req.user.id;
 
+    // ── Ambil timezone user ──────────────────────────────────────────────────
+    const userTz = await getUserTimezone(organizerId);
+
     const own = await db.query(
       "SELECT id, event_image FROM events WHERE id = $1 AND organizer_id = $2",
       [id, organizerId]
     );
 
     if (own.rows.length === 0) {
-      return res.status(403).json({
-        message: "Tidak diizinkan"
-      });
+      return res.status(403).json({ message: "Tidak diizinkan" });
     }
 
     const {
@@ -340,37 +396,42 @@ exports.editEvent = async (req, res) => {
       status,
     } = req.body;
 
-    let startDateTime = start_date;
-
-    if (start_time) {
-      startDateTime = `${start_date}T${start_time}:00`;
+    // ── Gabungkan tanggal + jam tanpa asumsi UTC ─────────────────────────────
+    let startDateTime = null;
+    if (start_date) {
+      startDateTime = start_time
+        ? `${start_date} ${start_time}:00`
+        : `${start_date} 00:00:00`;
     }
+
+    let endDateTime = end_date ? `${end_date} 00:00:00` : null;
 
     const imageName = req.file
       ? req.file.destination.replace(/^\/+/, '') + req.file.filename
       : own.rows[0].event_image;
 
+    // ── UPDATE: konversi waktu lokal → UTC via AT TIME ZONE ─────────────────
     const result = await db.query(`
       UPDATE events SET
-        name = COALESCE($1, name),
-        address = COALESCE($2, address),
-        start_date = COALESCE($3, start_date),
-        end_date = COALESCE($4, end_date),
-        price = COALESCE($5, price),
-        quota = COALESCE($6, quota),
+        name        = COALESCE($1, name),
+        address     = COALESCE($2, address),
+        start_date  = COALESCE(($3::timestamp AT TIME ZONE $14), start_date),
+        end_date    = COALESCE(($4::timestamp AT TIME ZONE $14), end_date),
+        price       = COALESCE($5, price),
+        quota       = COALESCE($6, quota),
         description = COALESCE($7, description),
         event_image = $8,
-        latitude = COALESCE($9, latitude),
-        longitude = COALESCE($10, longitude),
-        status = COALESCE($11, status)
+        latitude    = COALESCE($9, latitude),
+        longitude   = COALESCE($10, longitude),
+        status      = COALESCE($11, status)
       WHERE id = $12
         AND organizer_id = $13
       RETURNING *
     `, [
       name || null,
       address || null,
-      startDateTime || null,
-      end_date || null,
+      startDateTime,         // $3  — null jika tidak diubah
+      endDateTime,           // $4  — null jika tidak diubah
       price || null,
       quota || null,
       description || null,
@@ -379,12 +440,13 @@ exports.editEvent = async (req, res) => {
       longitude || null,
       status || null,
       id,
-      organizerId
+      organizerId,
+      userTz,                // $14 — timezone user
     ]);
 
     res.json({
       message: "Event berhasil diupdate",
-      event: result.rows[0]
+      event: result.rows[0],
     });
 
   } catch (err) {
@@ -396,16 +458,31 @@ exports.editEvent = async (req, res) => {
 // GET /api/events
 exports.getAllEvents = async (req, res) => {
   try {
+    const tz = req.query.tz || 'Asia/Jakarta';
+
     const result = await db.query(`
       SELECT
-        e.*,
+        e.id,
+        e.name,
+        e.address,
+        e.date,
+        e.price,
+        e.quota,
+        e.description,
+        e.organizer_id,
+        e.status,
+        e.event_image,
+        e.latitude,
+        e.longitude,
+        e.created_at,
+        e.updated_at,
+        TO_CHAR(e.start_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
+        TO_CHAR(e.end_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
         u.name AS organizer_name,
         COUNT(t.id) AS sold
       FROM events e
-      LEFT JOIN users u
-        ON e.organizer_id = u.id
-      LEFT JOIN tickets t
-        ON t.event_id = e.id
+      LEFT JOIN users u ON e.organizer_id = u.id
+      LEFT JOIN tickets t ON t.event_id = e.id
       WHERE e.status = 'active'
       GROUP BY e.id, u.name
       ORDER BY e.start_date ASC
@@ -414,9 +491,7 @@ exports.getAllEvents = async (req, res) => {
     res.json(result.rows);
 
   } catch (err) {
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -424,33 +499,43 @@ exports.getAllEvents = async (req, res) => {
 exports.getEventById = async (req, res) => {
   try {
     const { id } = req.params;
+    const tz = req.query.tz || 'Asia/Jakarta';
 
     const result = await db.query(`
       SELECT
-        e.*,
+        e.id,
+        e.name,
+        e.address,
+        e.date,
+        e.price,
+        e.quota,
+        e.description,
+        e.organizer_id,
+        e.status,
+        e.event_image,
+        e.latitude,
+        e.longitude,
+        e.created_at,
+        e.updated_at,
+        TO_CHAR(e.start_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
+        TO_CHAR(e.end_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
         u.name AS organizer_name,
         COUNT(t.id) AS sold
       FROM events e
-      LEFT JOIN users u
-        ON u.id = e.organizer_id
-      LEFT JOIN tickets t
-        ON t.event_id = e.id
+      LEFT JOIN users u ON u.id = e.organizer_id
+      LEFT JOIN tickets t ON t.event_id = e.id
       WHERE e.id = $1
       GROUP BY e.id, u.name
     `, [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "Not found"
-      });
+      return res.status(404).json({ message: "Not found" });
     }
 
     res.json(result.rows[0]);
 
   } catch (err) {
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -476,7 +561,6 @@ exports.getTicketTypes = async (req, res) => {
       ORDER BY tt.price ASC
     `, [id]);
 
-    // Jika ticket_types kosong, auto-generate dari data event
     if (result.rows.length === 0) {
       const eventRes = await db.query(
         `SELECT id, price, quota FROM events WHERE id = $1`, [id]
@@ -488,7 +572,6 @@ exports.getTicketTypes = async (req, res) => {
 
       const event = eventRes.rows[0];
 
-      // Insert ticket type default
       const inserted = await db.query(`
         INSERT INTO ticket_types (event_id, name, price, quota)
         VALUES ($1, 'General Admission', $2, $3)
@@ -502,9 +585,7 @@ exports.getTicketTypes = async (req, res) => {
     res.json(result.rows);
 
   } catch (err) {
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -524,8 +605,7 @@ exports.downloadAnalyticsCSV = async (req, res) => {
         COUNT(t.id) AS tickets_sold,
         COALESCE(SUM(tr.amount),0) AS revenue
       FROM events e
-      LEFT JOIN tickets t
-        ON t.event_id = e.id
+      LEFT JOIN tickets t ON t.event_id = e.id
       LEFT JOIN transactions tr
         ON tr.ticket_id = t.id
         AND tr.status = 'success'
@@ -535,33 +615,19 @@ exports.downloadAnalyticsCSV = async (req, res) => {
 
     console.log("CSV DATA:", result.rows);
 
-    let csv =
-      "Event Name,Start Date,Location,Price,Quota,Tickets Sold,Revenue\n";
+    let csv = "Event Name,Start Date,Location,Price,Quota,Tickets Sold,Revenue\n";
 
     result.rows.forEach((row) => {
-      csv += `"${row.name}","${row.start_date}",
-      "${row.address}",${row.price},
-      ${row.quota},${row.tickets_sold},
-      ${row.revenue}\n`;
+      csv += `"${row.name}","${row.start_date}","${row.address}",${row.price},${row.quota},${row.tickets_sold},${row.revenue}\n`;
     });
 
-    res.setHeader(
-      "Content-Type",
-      "text/csv"
-    );
-
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=analytics_report.csv"
-    );
-
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=analytics_report.csv");
     res.status(200).send(csv);
 
   } catch (err) {
     console.error("CSV ERROR:", err);
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -572,12 +638,13 @@ exports.adminGetAllEvents = async (req, res) => {
   try {
     const q = req.query.q ? `%${req.query.q}%` : "%";
     const status = req.query.status;
+    const tz = req.query.tz || 'Asia/Jakarta';
 
     const result = await db.query(`
       SELECT
         e.id,
         e.name,
-        e.start_date,
+        TO_CHAR(e.start_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
         e.address,
         e.status,
         e.price,
@@ -605,7 +672,7 @@ exports.adminGetAllEvents = async (req, res) => {
 exports.adminToggleStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body; // 'active' | 'inactive'
+    const { status } = req.body;
 
     const result = await db.query(
       `UPDATE events SET status = $1 WHERE id = $2 RETURNING id, name, status`,
@@ -634,7 +701,6 @@ exports.adminDeleteEvent = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // POST /api/events/eo/:id/ticket-types
 exports.createTicketType = async (req, res) => {
@@ -689,7 +755,6 @@ exports.getValidationStats = async (req, res) => {
   try {
     const organizerId = req.user.id;
 
-    // stats validation
     const statsRes = await db.query(`
       SELECT
         COUNT(*) FILTER (
@@ -707,48 +772,34 @@ exports.getValidationStats = async (req, res) => {
         ) AS total
 
       FROM tickets t
-      JOIN events e 
-        ON e.id = t.event_id
-
+      JOIN events e ON e.id = t.event_id
       WHERE e.organizer_id = $1
     `, [organizerId]);
 
-    // recent validations
     const recentRes = await db.query(`
       SELECT
         t.id,
         t.qr_code,
         t.status,
         t.updated_at,
-
         e.name AS event_name,
-
         u.name AS holder_name
-
       FROM tickets t
-      JOIN events e 
-        ON e.id = t.event_id
-
-      LEFT JOIN users u
-        ON u.id = t.current_owner_id
-
+      JOIN events e ON e.id = t.event_id
+      LEFT JOIN users u ON u.id = t.current_owner_id
       WHERE e.organizer_id = $1
         AND t.status = 'used'
-
       ORDER BY t.updated_at DESC
       LIMIT 10
     `, [organizerId]);
 
     res.json({
       stats: statsRes.rows[0],
-      recentValidations: recentRes.rows
+      recentValidations: recentRes.rows,
     });
 
   } catch (err) {
     console.error("VALIDATION STATS ERROR:", err);
-
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 };

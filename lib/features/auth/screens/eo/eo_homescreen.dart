@@ -4,6 +4,7 @@ import 'package:finalproject/features/auth/screens/eo/eo_my_events.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_event_detail.dart';
 import 'package:finalproject/services/eo_event_service.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_profile.dart';
+import 'package:finalproject/utils/date_utils.dart';
 
 final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
 
@@ -34,24 +35,9 @@ class _EoHomescreenState extends State<EoHomescreen> {
     }
   }
 
-  String _fmtDate(dynamic d) {
-    if (d == null) return "-";
-    try {
-      final dt = DateTime.parse(d.toString());
-      return DateFormat("MMM d, yyyy").format(dt);
-    } catch (_) { return "-"; }
-  }
+  String _fmtDate(dynamic d) => AppDateUtils.formatDate(d);
 
-  String _timeAgo(dynamic d) {
-    if (d == null) return "";
-    try {
-      final dt   = DateTime.parse(d.toString());
-      final diff = DateTime.now().difference(dt);
-      if (diff.inMinutes < 60) return "${diff.inMinutes} min ago";
-      if (diff.inHours   < 24) return "${diff.inHours} hr ago";
-      return "${diff.inDays} days ago";
-    } catch (_) { return ""; }
-  }
+  String _timeAgo(dynamic d) => AppDateUtils.timeAgo(d);
 
   @override
   Widget build(BuildContext context) {

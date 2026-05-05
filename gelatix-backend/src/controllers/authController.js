@@ -145,16 +145,16 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, email, telephone } = req.body;
+    const { name, email, telephone, timezone } = req.body;
 
     const userId = req.user.id;
 
     const result = await pool.query(
       `UPDATE users 
-       SET name = $1, email = $2, telephone = $3
+       SET name = $1, email = $2, telephone = $3, timezone = COALESCE($5, timezone)
        WHERE id = $4
-       RETURNING id, name, email, telephone`,
-      [name, email, telephone, userId]
+       RETURNING id, name, email, telephone, timezone`,
+      [name, email, telephone, userId, timezone || null]
     );
 
     res.json({
