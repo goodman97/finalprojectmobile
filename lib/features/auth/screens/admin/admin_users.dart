@@ -243,14 +243,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     return "${months[d.month - 1]} ${d.year}";
   }
 
-  IconData _roleIcon(String? role) {
-    switch (role) {
-      case "admin":     return Icons.shield_outlined;
-      case "organizer": return Icons.business_center_outlined;
-      default:          return Icons.person_outline;
-    }
-  }
-
   Color _roleColor(String? role) {
     switch (role) {
       case "admin":     return Colors.purple;

@@ -4,7 +4,6 @@ import 'package:finalproject/services/eo_event_service.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_create_event.dart';
 import 'package:finalproject/features/auth/screens/eo/eo_manage_ticket_types.dart';
-import 'package:finalproject/utils/date_utils.dart';
 
 final _rupiah = NumberFormat.currency(locale: "id_ID", symbol: "Rp ", decimalDigits: 0);
 
@@ -43,9 +42,6 @@ class _EoEventDetailState extends State<EoEventDetail> {
       debugPrint("EO DETAIL ERR: $e");
     }
   }
-
-  String _fmtDateShort(dynamic d) => AppDateUtils.formatDate(d);
-  String _fmtDate(dynamic d) {return AppDateUtils.formatDate(d);}
 
   String _formatWithTimezone(dynamic date) {
     if (date == null) return "-";
