@@ -18,7 +18,6 @@ class EventService {
 
 
     if (response.statusCode == 200) {
-      // ❗ kalau backend error (HTML)
       if (response.body.startsWith("<")) {
         throw Exception("Server error (HTML response)");
       }

@@ -23,9 +23,7 @@ class MiniGameService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      // Ensure vouchers field exists
       if (data["vouchers"] == null) data["vouchers"] = [];
-      // Ensure tickets field exists
       if (data["tickets"] == null) data["tickets"] = 0;
       return data;
     } else {

@@ -90,6 +90,7 @@ class _AdminProfileState extends State<AdminProfile> {
 
             const SizedBox(height: 20),
 
+            /*
             // ACCOUNT
             sectionTitle("ACCOUNT"),
             sectionCard([
@@ -115,6 +116,7 @@ class _AdminProfileState extends State<AdminProfile> {
               menuItem(Icons.help_outline, "Help Center"),
               menuItem(Icons.article, "Terms & Policies"),
             ]),
+            */
 
             const SizedBox(height: 20),
 

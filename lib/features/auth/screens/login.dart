@@ -266,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // ===== OR =====
+                // OR 
                 Row(
                   children: const [
                     Expanded(child: Divider()),
@@ -280,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 20),
 
-                // ===== BIOMETRIC BUTTON =====
+                // BIOMETRIC BUTTON 
                 SizedBox(
                   width: double.infinity,
                   height: 55,

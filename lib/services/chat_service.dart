@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
+import 'package:finalproject/config/api_config.dart';
 
 class ChatService {
   static Future<String> sendMessage(

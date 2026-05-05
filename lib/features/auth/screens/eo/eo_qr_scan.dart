@@ -27,7 +27,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     });
 
     try {
-      // Ambil token — endpoint /scan butuh Authorization header
       final token = await StorageService.getToken();
 
       final res = await http.post(
@@ -117,7 +116,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       body: Stack(
         children: [
 
-          // ── Camera ──────────────────────────────────
+          // Camera 
           MobileScanner(
             onDetect: (barcodeCapture) {
               final code = barcodeCapture.barcodes.firstOrNull?.rawValue;
@@ -125,7 +124,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             },
           ),
 
-          // ── Scan frame overlay ───────────────────────
+          // Scan frame overlay 
           if (scanStatus == null && !isProcessing)
             Center(
               child: Container(
@@ -153,7 +152,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               ),
             ),
 
-          // ── Loading ──────────────────────────────────
+          // Loading 
           if (isProcessing)
             Container(
               color: Colors.black.withValues(alpha: 0.5),
@@ -162,7 +161,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               ),
             ),
 
-          // ── Result overlay ───────────────────────────
+          // Result overlay 
           if (scanStatus != null)
             AnimatedOpacity(
               opacity: scanStatus != null ? 1.0 : 0.0,

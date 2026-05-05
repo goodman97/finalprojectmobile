@@ -44,7 +44,6 @@ class _UserMapScreenState
     print(
         "LOCATION TOGGLE STATUS: $userToggle");
 
-    // kalau switch OFF
     if (!userToggle) {
       if (!mounted) return;
 
@@ -57,7 +56,6 @@ class _UserMapScreenState
       return;
     }
 
-    // cek GPS device
     bool gpsEnabled = await Geolocator.isLocationServiceEnabled();
 
     print("GPS STATUS: $gpsEnabled");

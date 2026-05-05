@@ -6,7 +6,7 @@ import 'package:finalproject/services/storage_service.dart';
 class TicketService {
   static String get baseUrl => "${ApiConfig.baseUrl}/api";
 
-  /// Get ticket types for an event
+  // Get ticket types for an event
   static Future<List<dynamic>> getTicketTypes(String eventId) async {
     final token = await StorageService.getToken();
 
@@ -28,9 +28,7 @@ class TicketService {
     }
   }
 
-  /// Purchase ticket
-  /// Backend (ticketController.js) yang generate qr_code sendiri di server,
-  /// jadi Flutter hanya kirim: ticket_type_id, quantity, points_used, voucher_id
+  // Purchase ticket
   static Future<Map<String, dynamic>> purchase({
     required String ticketTypeId,
     required int quantity,
