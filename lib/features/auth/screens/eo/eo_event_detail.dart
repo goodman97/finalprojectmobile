@@ -43,9 +43,6 @@ class _EoEventDetailState extends State<EoEventDetail> {
     }
   }
 
-  // Menampilkan tanggal + waktu yang sudah dikonversi ke timezone lokal device
-  String _fmtDate(dynamic d) => AppDateUtils.formatDateTime(d);
-
   String _fmtDateShort(dynamic d) => AppDateUtils.formatDate(d);
 
   String _imgUrl(dynamic img) {
@@ -90,7 +87,6 @@ class _EoEventDetailState extends State<EoEventDetail> {
     final sold     = int.tryParse(e["sold"]?.toString() ?? "0") ?? 0;
     final quota    = int.tryParse(e["quota"]?.toString() ?? "0") ?? 1;
     final revenue  = double.tryParse(e["revenue"]?.toString() ?? "0") ?? 0;
-    final fillPct  = int.tryParse(e["fill_percent"]?.toString() ?? "0") ?? 0;
     final imgUrl   = _imgUrl(e["event_image"]);
     final isActive = e["status"] == "active";
 

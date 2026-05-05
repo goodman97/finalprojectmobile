@@ -322,6 +322,7 @@ class TicketDetail extends StatelessWidget {
     required String value,
   }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(8),
@@ -329,19 +330,41 @@ class TicketDetail extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 18, color: const Color(0xFF2F3E2F)),
+          child: Icon(
+            icon,
+            size: 18,
+            color: const Color(0xFF2F3E2F),
+          ),
         ),
+
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style:
-                    TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-            Text(value,
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 11,
+                ),
+              ),
+
+              const SizedBox(height: 2),
+
+              Text(
+                value,
+                softWrap: true,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 14)),
-          ],
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

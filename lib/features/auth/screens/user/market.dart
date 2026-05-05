@@ -365,6 +365,7 @@ class _MarketState extends State<Market> with SingleTickerProviderStateMixin {
                       onPressed: showSortSheet,
                     ),
                   ),
+<<<<<<< HEAD
                   const SizedBox(width: 8),
                   // Sell button
                   CircleAvatar(
@@ -374,6 +375,56 @@ class _MarketState extends State<Market> with SingleTickerProviderStateMixin {
                       onPressed: showSellDialog,
                       tooltip: "Jual Tiket",
                     ),
+=======
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Marketplace",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                "Verified resale tickets",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                          CircleAvatar(
+                            backgroundColor: Colors.white24,
+                            child: IconButton(
+                              icon: const Icon(Icons.filter_list,
+                                  color: Colors.white),
+                              onPressed: showSortOptions,
+                            ),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      TextField(
+                        controller: searchCtrl,
+                        onChanged: searchEvents,
+                        decoration: InputDecoration(
+                          hintText: "Search events...",
+                          filled: true,
+                          fillColor: Colors.white,
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ],
+>>>>>>> afba01fb981519ed934c57c238b0be92e6078374
                   ),
                 ]),
               ]),

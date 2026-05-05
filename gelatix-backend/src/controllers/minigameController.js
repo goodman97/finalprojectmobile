@@ -12,7 +12,8 @@ const rewards = [
   { type: "discount", value: 5,    chance: 7  },
 ];
 
-const allowFreeSpin = process.env.ALLOW_FREE_SPIN === "true";
+const allowFreeSpin =
+  String(process.env.ALLOW_FREE_SPIN).trim().toLowerCase() === "true";
 
 function getRandomReward() {
   const total = rewards.reduce((sum, r) => sum + r.chance, 0);
@@ -25,14 +26,12 @@ function getRandomReward() {
   return rewards[rewards.length - 1];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  GET /api/minigame  →  { points, spins, vouchers, tickets }
-// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/minigame
 exports.getGameData = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Ensure game_users row exists
+    // Pastikan row game_users ada
     const existing = await db.query(
       "SELECT id FROM game_users WHERE user_id = $1",
       [userId]
@@ -50,32 +49,47 @@ exports.getGameData = async (req, res) => {
       [userId]
     );
 
-    // Vouchers (only unused)
+    // Vouchers
     const vouchersRes = await db.query(
       "SELECT id, value, used, created_at FROM user_rewards WHERE user_id = $1 ORDER BY created_at DESC",
       [userId]
     );
 
-    // Spins available = number of transactions (purchases)
     const trxRes = await db.query(
-      "SELECT COUNT(*) FROM transactions WHERE user_id = $1",
+      `SELECT COUNT(t.id) AS total
+      FROM tickets t
+      JOIN transactions tr ON tr.ticket_id = t.id
+      WHERE tr.user_id = $1
+        AND tr.status = 'success'`,
       [userId]
     );
-    let totalSpins = parseInt(trxRes.rows[0].count);
-    if (allowFreeSpin) totalSpins = 999;
 
-    // Ticket count owned by user
+    let totalSpins = parseInt(trxRes.rows[0].total);
+
+    const usedSpinRes = await db.query(
+      "SELECT total_spins FROM game_users WHERE user_id = $1",
+      [userId]
+    );
+
+    let usedSpins = usedSpinRes.rows.length > 0
+      ? parseInt(usedSpinRes.rows[0].total_spins)
+      : 0;
+
+    let remainingSpins = Math.max(0, totalSpins - usedSpins);
+
+    if (allowFreeSpin) remainingSpins = 999;
+
+    // Ticket count
     const ticketRes = await db.query(
       "SELECT COUNT(*) FROM tickets WHERE current_owner_id = $1 AND status = 'active'",
       [userId]
     );
-    const ticketCount = parseInt(ticketRes.rows[0].count);
 
     res.json({
       points:   pointsRes.rows[0].total_points,
-      spins:    totalSpins,
+      spins:    remainingSpins,
       vouchers: vouchersRes.rows,
-      tickets:  ticketCount,
+      tickets:  parseInt(ticketRes.rows[0].count),
     });
 
   } catch (err) {
@@ -84,21 +98,23 @@ exports.getGameData = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  POST /api/minigame/spin  →  { type, value, totalPoints, usedSpins, spinsLeft }
-// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/minigame/spin
 exports.spin = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Total spins available
     const trxRes = await db.query(
-      "SELECT COUNT(*) FROM transactions WHERE user_id = $1",
+      `SELECT COUNT(t.id) AS total
+      FROM tickets t
+      JOIN transactions tr ON tr.ticket_id = t.id
+      WHERE tr.user_id = $1
+        AND tr.status = 'success'`,
       [userId]
     );
-    const totalSpins = parseInt(trxRes.rows[0].count);
 
-    // Spins already used
+    const totalSpins = parseInt(trxRes.rows[0].total);
+
+    // Spin yang sudah dipakai
     const usedRes = await db.query(
       "SELECT total_spins FROM game_users WHERE user_id = $1",
       [userId]
@@ -106,22 +122,24 @@ exports.spin = async (req, res) => {
 
     let used = 0;
     if (usedRes.rows.length > 0) {
-      used = usedRes.rows[0].total_spins;
-    } else {
-      await db.query(
-        "INSERT INTO game_users (user_id, total_points, total_spins) VALUES ($1, 0, 0)",
-        [userId]
-      );
+      used = parseInt(usedRes.rows[0].total_spins);
+
+      // Reset jika data used melebihi total (edge case)
+      if (used > totalSpins) {
+        used = 0;
+        await db.query(
+          "UPDATE game_users SET total_spins = 0 WHERE user_id = $1",
+          [userId]
+        );
+      }
     }
 
     if (!allowFreeSpin && used >= totalSpins) {
       return res.status(400).json({ message: "Spin habis" });
     }
 
-    // Pick reward
     const reward = getRandomReward();
 
-    // Increment spin counter
     if (!allowFreeSpin) {
       await db.query(
         "UPDATE game_users SET total_spins = total_spins + 1 WHERE user_id = $1",
@@ -129,7 +147,6 @@ exports.spin = async (req, res) => {
       );
     }
 
-    // Apply reward
     if (reward.type === "points") {
       await db.query(
         "UPDATE game_users SET total_points = total_points + $1 WHERE user_id = $2",
@@ -145,13 +162,12 @@ exports.spin = async (req, res) => {
       );
     }
 
-    // Fresh data
     const updated = await db.query(
       "SELECT total_points, total_spins FROM game_users WHERE user_id = $1",
       [userId]
     );
 
-    const newUsed = updated.rows[0].total_spins;
+    const newUsed   = updated.rows[0].total_spins;
     const spinsLeft = allowFreeSpin ? 999 : totalSpins - newUsed;
 
     res.json({

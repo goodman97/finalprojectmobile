@@ -48,7 +48,6 @@ class EventDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = formatImage(event["event_image"] ?? event["image"]);
     final name = (event["name"] ?? "Event").toString();
-    final price = event["price"] ?? 0;
     final address = (event["address"] ?? "-").toString();
     final description = (event["description"] ?? "No description available.").toString();
     final organizer = (event["organizer_name"] ?? event["organizer_id"] ?? "Organizer").toString();
@@ -167,16 +166,6 @@ class EventDetail extends StatelessWidget {
                                     color: Color(0xFFE4572E),
                                   ),
                                 ),
-                                Row(
-                                  children: const [
-                                    Icon(Icons.star,
-                                        color: Color(0xFFE4572E), size: 16),
-                                    SizedBox(width: 4),
-                                    Text("4.8",
-                                        style: TextStyle(
-                                            color: Colors.grey, fontSize: 13)),
-                                  ],
-                                )
                               ],
                             )
                           ],
@@ -252,18 +241,6 @@ class EventDetail extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _actionButton(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        shape: BoxShape.circle,
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6)],
-      ),
-      child: Icon(icon, color: const Color(0xFF2F3E2F), size: 20),
     );
   }
 

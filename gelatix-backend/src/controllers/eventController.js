@@ -626,8 +626,11 @@ exports.downloadAnalyticsCSV = async (req, res) => {
     res.status(200).send(csv);
 
   } catch (err) {
-    console.error("CSV ERROR:", err);
-    res.status(500).json({ message: err.message });
+    console.error("DOWNLOAD CSV ERROR:", err);
+
+    res.status(500).json({
+      message: err.message
+    });
   }
 };
 

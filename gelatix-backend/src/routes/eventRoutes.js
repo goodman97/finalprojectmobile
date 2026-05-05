@@ -6,8 +6,10 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
-// ── EO / Organizer routes ─────────────────────────────────────────────────────
 
+// ── EO / Organizer routes ─────────────────────────
+
+// dashboard
 router.get(
   "/eo/dashboard",
   auth,
@@ -15,6 +17,7 @@ router.get(
   ctrl.getEoDashboard
 );
 
+// my events
 router.get(
   "/eo/my-events",
   auth,
@@ -22,7 +25,8 @@ router.get(
   ctrl.getMyEvents
 );
 
-// download-report harus sebelum /eo/:id agar tidak tertangkap sebagai :id
+// IMPORTANT:
+// harus di atas /eo/:id
 router.get(
   "/eo/download-report",
   auth,
@@ -30,6 +34,7 @@ router.get(
   ctrl.downloadAnalyticsCSV
 );
 
+// create event
 router.post(
   "/eo/create",
   auth,
@@ -38,6 +43,7 @@ router.post(
   ctrl.createEvent
 );
 
+// edit event
 router.put(
   "/eo/:id/edit",
   auth,
@@ -46,6 +52,7 @@ router.put(
   ctrl.editEvent
 );
 
+// create ticket type
 router.post(
   "/eo/:id/ticket-types",
   auth,
@@ -53,6 +60,7 @@ router.post(
   ctrl.createTicketType
 );
 
+// update ticket type
 router.put(
   "/eo/ticket-types/:ticketTypeId",
   auth,
@@ -60,7 +68,8 @@ router.put(
   ctrl.updateTicketType
 );
 
-// /eo/:id harus paling bawah dari grup /eo agar tidak "menelan" route spesifik di atas
+// detail event
+// taruh paling bawah agar route spesifik di atas aman
 router.get(
   "/eo/:id",
   auth,
@@ -69,7 +78,7 @@ router.get(
 );
 
 
-// ── Admin only ────────────────────────────────────────────────────────────────
+// ── Admin routes ─────────────────────────
 
 router.get(
   "/admin/all",
@@ -92,17 +101,17 @@ router.delete(
   ctrl.adminDeleteEvent
 );
 
-// ── Public ────────────────────────────────────────────────────────────────────
 
-// validation
+// ── Validation ─────────────────────────
+
 router.get(
-  "/tickets/validation-stats", 
-  auth, 
+  "/tickets/validation-stats",
+  auth,
   ctrl.getValidationStats
 );
 
-// PUBLIC ROUTES
 
+// ── Public routes ─────────────────────────
 
 router.get("/", ctrl.getAllEvents);
 router.get("/:id", ctrl.getEventById);

@@ -496,16 +496,9 @@ class _OrganizerTicketsState extends State<OrganizerTickets> {
       ),
     );
   }
-
-  void _openScanner(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const _QRScannerPage()),
-    ).then((_) => _load());
-  }
 }
 
-// ── QR Scanner Page ──────────────────────────────────────────────────────────
+// QR Scanner Page
 class _QRScannerPage extends StatefulWidget {
   const _QRScannerPage();
 

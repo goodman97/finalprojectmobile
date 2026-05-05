@@ -209,22 +209,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    height: 40,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        categoryChip("All", true),
-                        categoryChip("Music", false),
-                        categoryChip("Sports", false),
-                        categoryChip("Theater", false),
-                        categoryChip("Festival", false),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
