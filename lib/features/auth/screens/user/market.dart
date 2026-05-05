@@ -348,120 +348,100 @@ class _MarketState extends State<Market> with SingleTickerProviderStateMixin {
                 colors: [Color(0xFF2F3E2F), Color(0xFF4E5F4E)],
               ),
             ),
-            child: Column(children: [
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text("Marketplace",
-                      style: TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold)),
-                  Text("Resale tiket terverifikasi",
-                      style: TextStyle(color: Colors.white70)),
-                ]),
-                Row(children: [
-                  // Sort button
-                  CircleAvatar(
-                    backgroundColor: Colors.white24,
-                    child: IconButton(
-                      icon: const Icon(Icons.sort, color: Colors.white),
-                      onPressed: showSortSheet,
-                    ),
-                  ),
-<<<<<<< HEAD
-                  const SizedBox(width: 8),
-                  // Sell button
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFFE4572E),
-                    child: IconButton(
-                      icon: const Icon(Icons.sell_outlined, color: Colors.white),
-                      onPressed: showSellDialog,
-                      tooltip: "Jual Tiket",
-                    ),
-=======
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Marketplace",
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                "Verified resale tickets",
-                                style: TextStyle(color: Colors.white70),
-                              ),
-                            ],
-                          ),
-                          CircleAvatar(
-                            backgroundColor: Colors.white24,
-                            child: IconButton(
-                              icon: const Icon(Icons.filter_list,
-                                  color: Colors.white),
-                              onPressed: showSortOptions,
-                            ),
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 15),
-                      TextField(
-                        controller: searchCtrl,
-                        onChanged: searchEvents,
-                        decoration: InputDecoration(
-                          hintText: "Search events...",
-                          filled: true,
-                          fillColor: Colors.white,
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide.none,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Marketplace",
+                          style: TextStyle(
+                            fontSize: 22,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                    ],
->>>>>>> afba01fb981519ed934c57c238b0be92e6078374
-                  ),
-                ]),
-              ]),
+                        Text(
+                          "Verified resale tickets",
+                          style: TextStyle(
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
 
-              const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        // filter/sort button
+                        CircleAvatar(
+                          backgroundColor: Colors.white24,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.filter_list,
+                              color: Colors.white,
+                            ),
+                            onPressed: showSortSheet,
+                          ),
+                        ),
 
-              // Search
-              TextField(
-                onChanged: applySearch,
-                decoration: InputDecoration(
-                  hintText: "Cari event atau lokasi...",
-                  filled: true,
-                  fillColor: Colors.white,
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                        const SizedBox(width: 8),
+
+                        // sell button
+                        CircleAvatar(
+                          backgroundColor: const Color(0xFFE4572E),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.sell_outlined,
+                              color: Colors.white,
+                            ),
+                            onPressed: showSellDialog,
+                            tooltip: "Jual Tiket",
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-              // Tabs
-              TabBar(
-                controller: _tabController,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white54,
-                indicatorColor: const Color(0xFFE4572E),
-                indicatorWeight: 3,
-                tabs: [
-                  Tab(text: "Semua (${filtered.length})"),
-                  Tab(text: "Listing Saya"),
-                ],
-              ),
-            ]),
+                TextField(
+                  onChanged: applySearch,
+                  decoration: InputDecoration(
+                    hintText: "Cari event atau lokasi...",
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Colors.grey,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                TabBar(
+                  controller: _tabController,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white54,
+                  indicatorColor: const Color(0xFFE4572E),
+                  indicatorWeight: 3,
+                  tabs: [
+                    Tab(text: "Semua (${filtered.length})"),
+                    const Tab(text: "Listing Saya"),
+                  ],
+                ),
+              ],
+            ),
           ),
 
           // ── Content ──────────────────────────────────

@@ -19,16 +19,10 @@ const getUserTimezone = async (userId) => {
   }
 };
 
-// Format timestamp with user's timezone
-const formatWithTimezone = (column, timezone = 'Asia/Jakarta') => {
-  return `TO_CHAR(${column} AT TIME ZONE '${timezone}', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`;
-};
-
 // GET /api/events/eo/dashboard
 exports.getEoDashboard = async (req, res) => {
   try {
     const organizerId = req.user.id;
-    const userTz = await getUserTimezone(organizerId);
 
     const statsRes = await db.query(`
       SELECT
@@ -49,7 +43,7 @@ exports.getEoDashboard = async (req, res) => {
       SELECT
         e.id,
         e.name,
-        TO_CHAR(e.start_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
+        TO_CHAR(e.start_date,'YYYY-MM-DD"T"HH24:MI:SS') AS start_date,
         e.address,
         e.event_image,
         e.quota,
@@ -113,7 +107,6 @@ exports.getMyEvents = async (req, res) => {
   try {
     const organizerId = req.user.id;
     const q = req.query.q || "";
-    const userTz = await getUserTimezone(organizerId);
 
     const result = await db.query(`
       SELECT
@@ -130,33 +123,36 @@ exports.getMyEvents = async (req, res) => {
         e.latitude,
         e.longitude,
         e.created_at,
-        e.updated_at,
-        TO_CHAR(e.start_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
-        TO_CHAR(e.end_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
 
-        COUNT(DISTINCT t.id) FILTER (
-          WHERE t.status IN ('active', 'used', 'resale')
+        TO_CHAR(
+          e.start_date,
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) AS start_date,
+
+        TO_CHAR(
+          e.end_date,
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) AS end_date,
+
+        (
+          SELECT COUNT(*)
+          FROM tickets t
+          WHERE t.event_id = e.id
+          AND t.status IN ('active', 'used', 'resale')
         ) AS sold,
 
-        COALESCE(
-          SUM(tr.amount) FILTER (
-            WHERE tr.status = 'success'
-          ),
-          0
+        (
+          SELECT COALESCE(SUM(tr.amount), 0)
+          FROM transactions tr
+          JOIN tickets t ON t.id = tr.ticket_id
+          WHERE t.event_id = e.id
+          AND tr.status = 'success'
         ) AS revenue
 
       FROM events e
-
-      LEFT JOIN tickets t
-        ON t.event_id = e.id
-
-      LEFT JOIN transactions tr
-        ON tr.ticket_id = t.id
-
       WHERE e.organizer_id = $1
-        AND LOWER(e.name) LIKE LOWER($2)
+      AND LOWER(e.name) LIKE LOWER($2)
 
-      GROUP BY e.id
       ORDER BY e.created_at DESC
     `, [
       organizerId,
@@ -167,7 +163,9 @@ exports.getMyEvents = async (req, res) => {
 
   } catch (error) {
     console.log("GET MY EVENTS ERROR:", error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      message: error.message
+    });
   }
 };
 
@@ -176,7 +174,6 @@ exports.getEoEventDetail = async (req, res) => {
   try {
     const { id } = req.params;
     const organizerId = req.user.id;
-    const userTz = await getUserTimezone(organizerId);
 
     const result = await db.query(`
       SELECT
@@ -193,9 +190,8 @@ exports.getEoEventDetail = async (req, res) => {
         e.latitude,
         e.longitude,
         e.created_at,
-        e.updated_at,
-        TO_CHAR(e.start_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
-        TO_CHAR(e.end_date AT TIME ZONE '${userTz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
+        TO_CHAR(e.start_date,'YYYY-MM-DD"T"HH24:MI:SS') AS start_date,
+        TO_CHAR(e.end_date,'YYYY-MM-DD"T"HH24:MI:SS') AS end_date,
         u.name AS organizer_name,
 
         (
@@ -272,9 +268,9 @@ exports.getEoEventDetail = async (req, res) => {
 exports.createEvent = async (req, res) => {
   try {
     const organizerId = req.user.id;
-
-    // ── Ambil timezone user ──────────────────────────────────────────────────
     const userTz = await getUserTimezone(organizerId);
+
+    // Ambil timezone user 
 
     const {
       name,
@@ -293,8 +289,6 @@ exports.createEvent = async (req, res) => {
       return res.status(400).json({ message: "Semua field wajib diisi" });
     }
 
-    // ── Gabungkan tanggal + jam tanpa asumsi UTC ─────────────────────────────
-    // Format: 'YYYY-MM-DD HH24:MI:SS' — PostgreSQL akan interpret sesuai userTz
     let startDateTime = start_time
       ? `${start_date} ${start_time}:00`
       : `${start_date} 00:00:00`;
@@ -305,7 +299,6 @@ exports.createEvent = async (req, res) => {
       ? req.file.destination.replace(/^\/+/, '') + req.file.filename
       : null;
 
-    // ── INSERT: konversi waktu lokal → UTC via AT TIME ZONE ─────────────────
     const result = await db.query(`
       INSERT INTO events (
         name,
@@ -369,9 +362,9 @@ exports.editEvent = async (req, res) => {
   try {
     const { id } = req.params;
     const organizerId = req.user.id;
-
-    // ── Ambil timezone user ──────────────────────────────────────────────────
     const userTz = await getUserTimezone(organizerId);
+
+    // Ambil timezone user 
 
     const own = await db.query(
       "SELECT id, event_image FROM events WHERE id = $1 AND organizer_id = $2",
@@ -475,9 +468,8 @@ exports.getAllEvents = async (req, res) => {
         e.latitude,
         e.longitude,
         e.created_at,
-        e.updated_at,
-        TO_CHAR(e.start_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
-        TO_CHAR(e.end_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
+        TO_CHAR(e.start_date,'YYYY-MM-DD"T"HH24:MI:SS') AS start_date,
+        TO_CHAR(e.end_date,'YYYY-MM-DD"T"HH24:MI:SS') AS end_date,
         u.name AS organizer_name,
         COUNT(t.id) AS sold
       FROM events e
@@ -516,9 +508,8 @@ exports.getEventById = async (req, res) => {
         e.latitude,
         e.longitude,
         e.created_at,
-        e.updated_at,
-        TO_CHAR(e.start_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
-        TO_CHAR(e.end_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS end_date,
+        TO_CHAR(e.start_date,'YYYY-MM-DD"T"HH24:MI:SS') AS start_date,
+        TO_CHAR(e.end_date,'YYYY-MM-DD"T"HH24:MI:SS') AS end_date,
         u.name AS organizer_name,
         COUNT(t.id) AS sold
       FROM events e
@@ -647,7 +638,7 @@ exports.adminGetAllEvents = async (req, res) => {
       SELECT
         e.id,
         e.name,
-        TO_CHAR(e.start_date AT TIME ZONE '${tz}', 'YYYY-MM-DD"T"HH24:MI:SSOF') AS start_date,
+        TO_CHAR(e.start_date,'YYYY-MM-DD"T"HH24:MI:SS') AS start_date,
         e.address,
         e.status,
         e.price,

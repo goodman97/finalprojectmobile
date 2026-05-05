@@ -35,7 +35,7 @@ class EoEventService {
   }
 
   // My Events
-  static Future<List<dynamic>> getMyEvents({String q = ""}) async {
+  static Future<dynamic> getMyEvents({String q = ""}) async {
     final uri = Uri.parse("$base/my-events")
         .replace(queryParameters: q.isNotEmpty ? {"q": q} : {});
 

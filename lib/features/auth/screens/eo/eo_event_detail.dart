@@ -22,6 +22,7 @@ class _EoEventDetailState extends State<EoEventDetail> {
   List transactions = [];
   bool isLoading = true;
   int selectedTab = 0;
+  String selectedTimezone = "WIB";
 
   @override
   void initState() {
@@ -44,6 +45,38 @@ class _EoEventDetailState extends State<EoEventDetail> {
   }
 
   String _fmtDateShort(dynamic d) => AppDateUtils.formatDate(d);
+  String _fmtDate(dynamic d) {return AppDateUtils.formatDate(d);}
+
+  String _formatWithTimezone(dynamic date) {
+    if (date == null) return "-";
+
+    final parsed = DateTime.tryParse(date.toString());
+    if (parsed == null) return "-";
+
+    DateTime adjusted = parsed.toLocal();
+
+    switch (selectedTimezone) {
+      case "WITA":
+        adjusted = parsed.add(const Duration(hours: 1));
+        break;
+
+      case "WIT":
+        adjusted = parsed.add(const Duration(hours: 2));
+        break;
+
+      case "London":
+        adjusted = parsed.subtract(const Duration(hours: 6));
+        break;
+
+      case "WIB":
+      default:
+        adjusted = parsed;
+    }
+
+    return DateFormat(
+      "dd MMM yyyy • HH:mm",
+    ).format(adjusted);
+  }
 
   String _imgUrl(dynamic img) {
     if (img == null || img.toString().isEmpty) {
@@ -199,12 +232,60 @@ class _EoEventDetailState extends State<EoEventDetail> {
                               e["organizer_name"] ?? "-",
                               style: const TextStyle(color: Colors.grey),
                             ),
+                            const SizedBox(height: 12),
+
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF5F1E8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: selectedTimezone,
+                                  isExpanded: true,
+                                  items: const [
+                                    DropdownMenuItem(
+                                      value: "WIB",
+                                      child: Text("WIB (UTC+7)"),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: "WITA",
+                                      child: Text("WITA (UTC+8)"),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: "WIT",
+                                      child: Text("WIT (UTC+9)"),
+                                    ),
+                                    DropdownMenuItem(
+                                      value: "London",
+                                      child: Text("London (UTC+1)"),
+                                    ),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val == null) return;
+                                    setState(() {
+                                      selectedTimezone = val;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 16),
-                            _infoRow(Icons.event_available, "Start",
-                                _fmtDate(e["start_date"])),
+                            _infoRow(
+                                Icons.event_available,
+                                "Start",
+                                _formatWithTimezone(e["start_date"]),
+                              ),
                             const SizedBox(height: 8),
-                            _infoRow(Icons.event_busy, "End",
-                                _fmtDate(e["end_date"])),
+                            _infoRow(
+                                Icons.event_busy,
+                                "End",
+                                _formatWithTimezone(e["end_date"]),
+                              ),
                             const SizedBox(height: 8),
                             _infoRow(Icons.location_on, "Location",
                                 e["address"] ?? "-"),

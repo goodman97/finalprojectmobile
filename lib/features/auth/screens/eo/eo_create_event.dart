@@ -186,10 +186,17 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                                 _address.text = addr;
                               });
                             }
-                          } catch (_) {
+                          }  catch (e) {
+                            print("REVERSE GEOCODING ERROR: $e");
+
                             setState(() {
                               _lat = selected!.latitude;
                               _lng = selected!.longitude;
+
+                              // fallback kalau alamat gagal diambil
+                              _address.text =
+                                  "${selected!.latitude.toStringAsFixed(5)}, "
+                                  "${selected!.longitude.toStringAsFixed(5)}";
                             });
                           }
                           if (mounted) Navigator.pop(ctx);

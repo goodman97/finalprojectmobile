@@ -34,11 +34,32 @@ class _EoMyEventsState extends State<EoMyEvents> {
 
   Future<void> _load([String q = ""]) async {
     setState(() => isLoading = true);
+
     try {
       final data = await EoEventService.getMyEvents(q: q);
-      setState(() { events = data; isLoading = false; });
+
+      print("MY EVENTS DATA: $data");
+
+      setState(() {
+        if (data is List) {
+          events = data;
+        } 
+        else if (data is Map && data["events"] != null) {
+          events = data["events"];
+        } 
+        else {
+          events = [];
+        }
+
+        isLoading = false;
+      });
     } catch (e) {
-      setState(() => isLoading = false);
+      print("LOAD EVENTS ERROR: $e");
+
+      setState(() {
+        events = [];
+        isLoading = false;
+      });
     }
   }
 
