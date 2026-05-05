@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/services/storage_service.dart';
+import 'package:finalproject/utils/date_utils.dart';
 
 class AdminHomescreen extends StatefulWidget {
   const AdminHomescreen({super.key});
@@ -68,15 +69,7 @@ class _AdminHomescreenState extends State<AdminHomescreen> {
     return "$n";
   }
 
-  String _timeAgo(dynamic dateStr) {
-    if (dateStr == null) return "-";
-    final d = DateTime.tryParse(dateStr.toString());
-    if (d == null) return "-";
-    final diff = DateTime.now().difference(d);
-    if (diff.inMinutes < 60) return "${diff.inMinutes} min ago";
-    if (diff.inHours < 24)   return "${diff.inHours}h ago";
-    return "${diff.inDays}d ago";
-  }
+  String _timeAgo(dynamic dateStr) => AppDateUtils.timeAgo(dateStr);
 
   @override
   Widget build(BuildContext context) {

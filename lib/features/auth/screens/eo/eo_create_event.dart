@@ -55,19 +55,21 @@ class _EoCreateEventState extends State<EoCreateEvent> {
       _lat = double.tryParse(e["latitude"]?.toString()  ?? "");
       _lng = double.tryParse(e["longitude"]?.toString() ?? "");
 
-      // Format dates
+      // ── Fix timezone: parse lalu konversi ke local time device ──────────
+      // Backend mengembalikan waktu dengan offset (misal +07:00).
+      // DateTime.parse() otomatis membaca offset tsb, lalu .toLocal()
+      // memastikan kita display dalam waktu lokal tanpa dobel konversi.
       if (e["start_date"] != null) {
         try {
-          _startDate.text = DateFormat("yyyy-MM-dd")
-              .format(DateTime.parse(e["start_date"].toString()));
-          _startTime.text = DateFormat("HH:mm")
-              .format(DateTime.parse(e["start_date"].toString()));
+          final dt = DateTime.parse(e["start_date"].toString()).toLocal();
+          _startDate.text = DateFormat("yyyy-MM-dd").format(dt);
+          _startTime.text = DateFormat("HH:mm").format(dt);
         } catch (_) {}
       }
       if (e["end_date"] != null) {
         try {
-          _endDate.text = DateFormat("yyyy-MM-dd")
-              .format(DateTime.parse(e["end_date"].toString()));
+          final dt = DateTime.parse(e["end_date"].toString()).toLocal();
+          _endDate.text = DateFormat("yyyy-MM-dd").format(dt);
         } catch (_) {}
       }
     }
@@ -82,27 +84,26 @@ class _EoCreateEventState extends State<EoCreateEvent> {
   }
 
   Future<void> _pickImage() async {
-  final XFile? pickedFile =
-      await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.gallery);
 
-  if (pickedFile != null) {
-    if (kIsWeb) {
-      final bytes = await pickedFile.readAsBytes();
-
-      setState(() {
-        selectedImage = pickedFile;
-        webImage = bytes;
-        _imageFile = null;
-      });
-    } else {
-      setState(() {
-        selectedImage = pickedFile;
-        webImage = null;
-        _imageFile = File(pickedFile.path);
-      });
+    if (pickedFile != null) {
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        setState(() {
+          selectedImage = pickedFile;
+          webImage = bytes;
+          _imageFile = null;
+        });
+      } else {
+        setState(() {
+          selectedImage = pickedFile;
+          webImage = null;
+          _imageFile = File(pickedFile.path);
+        });
+      }
     }
   }
-}
 
   Future<void> _pickDate(TextEditingController ctrl) async {
     final now  = DateTime.now();
@@ -168,7 +169,6 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                     TextButton(
                       onPressed: () async {
                         if (selected != null) {
-                          // Reverse geocode
                           try {
                             final placemarks = await placemarkFromCoordinates(
                                 selected!.latitude, selected!.longitude);
@@ -252,9 +252,7 @@ class _EoCreateEventState extends State<EoCreateEvent> {
 
     if (!_isEdit && selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Pilih gambar event terlebih dahulu"),
-        ),
+        const SnackBar(content: Text("Pilih gambar event terlebih dahulu")),
       );
       return;
     }
@@ -263,19 +261,19 @@ class _EoCreateEventState extends State<EoCreateEvent> {
     try {
       if (_isEdit) {
         await EoEventService.editEvent(
-        id: widget.editEvent!["id"].toString(),
-        name: _name.text,
-        address: _address.text,
-        startDate: _startDate.text,
-        startTime: _startTime.text,
-        endDate: _endDate.text,
-        price: _price.text,
-        quota: _quota.text,
-        description: _description.text,
-        latitude: _lat,
-        longitude: _lng,
-        imageFile: _imageFile,
-        webImage: webImage,
+          id:          widget.editEvent!["id"].toString(),
+          name:        _name.text,
+          address:     _address.text,
+          startDate:   _startDate.text,
+          startTime:   _startTime.text,
+          endDate:     _endDate.text,
+          price:       _price.text,
+          quota:       _quota.text,
+          description: _description.text,
+          latitude:    _lat,
+          longitude:   _lng,
+          imageFile:   _imageFile,
+          webImage:    webImage,
         );
       } else {
         await EoEventService.createEvent(
@@ -290,7 +288,7 @@ class _EoCreateEventState extends State<EoCreateEvent> {
           latitude:    _lat,
           longitude:   _lng,
           imageFile:   _imageFile,
-          webImage: webImage,
+          webImage:    webImage,
         );
       }
 
@@ -427,8 +425,7 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                             onTap: _openMapPicker,
                             child: Container(
                               height: 54,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14),
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF2F3E2F),
                                 borderRadius: BorderRadius.circular(14),

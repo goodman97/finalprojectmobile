@@ -1,31 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:finalproject/config/api_config.dart';
+import 'package:finalproject/utils/date_utils.dart';
 
 class TicketDetail extends StatelessWidget {
   final Map<String, dynamic> ticket;
 
   const TicketDetail({super.key, required this.ticket});
 
-  String _formatDate(String? date) {
-    if (date == null || date.isEmpty) return '-';
-    final d = DateTime.tryParse(date);
-    if (d == null) return date;
-    const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${d.day} ${months[d.month]} ${d.year}';
-  }
+  String _formatDate(String? date) => AppDateUtils.formatDateLong(date);
 
-  String _formatTime(String? date) {
-    if (date == null || date.isEmpty) return '-';
-    final d = DateTime.tryParse(date);
-    if (d == null) return '';
-    final h = d.hour.toString().padLeft(2, '0');
-    final m = d.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
+  String _formatTime(String? date) => AppDateUtils.formatTime(date);
 
   ImageProvider _getImage(String? image) {
     if (image == null || image.isEmpty) {

@@ -105,7 +105,12 @@ class AuthService {
   }
 
   // UPDATE PROFILE
-  static Future<Map<String, dynamic>> updateProfile(String name, String email, String phone) async {
+  static Future<Map<String, dynamic>> updateProfile(
+    String name, 
+    String email, 
+    String phone, 
+    {String? timezone}
+  ) async {
     final token = await StorageService.getToken();
     final response = await http.put(
       Uri.parse("$baseUrl/profile"),
@@ -117,6 +122,7 @@ class AuthService {
         "name": name,
         "email": email,
         "telephone": phone,
+        if (timezone != null) "timezone": timezone,
       }),
     );
     final raw = json.decode(response.body);

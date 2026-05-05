@@ -3,6 +3,7 @@ import 'package:finalproject/services/user_tickets_service.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/navigation.dart';
 import 'package:finalproject/features/auth/screens/user/ticket_detail.dart';
+import 'package:finalproject/utils/date_utils.dart';
 
 class MyTickets extends StatefulWidget {
   const MyTickets({super.key});
@@ -202,12 +203,7 @@ class _MyTicketsState extends State<MyTickets> {
     );
   }
 
-  String formatDate(String? date) {
-    if (date == null) return "";
-    final d = DateTime.tryParse(date);
-    if (d == null) return date;
-    return "${d.day}/${d.month}/${d.year}";
-  }
+  String formatDate(String? date) => AppDateUtils.formatDateLong(date);
 
   /// Bangun URL gambar dari path yang dikembalikan backend.
   /// DB lama: hanya filename (1234.jpg)
