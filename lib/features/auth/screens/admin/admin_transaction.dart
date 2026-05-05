@@ -239,13 +239,21 @@ class _AdminTransactionsScreenState
   /// CARD
   Widget _transactionCard(Map<String, dynamic> t) {
     Color color;
-    if (t["status"] == "completed") {
+    if (t["status"] == "success") {
       color = Colors.green;
     } else if (t["status"] == "pending") {
       color = Colors.orange;
     } else {
       color = Colors.red;
     }
+
+    final shortId = t["id"].toString().length > 8
+        ? "#${t["id"].toString().substring(0, 8).toUpperCase()}"
+        : "#${t["id"]}";
+
+    final shortTicket = t["ticketId"].toString().length > 8
+        ? t["ticketId"].toString().substring(0, 8).toUpperCase()
+        : t["ticketId"].toString();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -257,57 +265,66 @@ class _AdminTransactionsScreenState
           BoxShadow(color: Colors.black12, blurRadius: 6),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          /// INFO
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                Row(
-                  children: [
-                    Text(t["id"],
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    _chip(t["status"], color),
-                  ],
-                ),
-
-                const SizedBox(height: 5),
-
-                Text(t["user"]),
-
-                const SizedBox(height: 3),
-
-                Text(
-                  "${t["event"]} • ${t["ticketId"]}",
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-
-                const SizedBox(height: 3),
-
-                Text(
-                  t["time"],
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-
-          /// AMOUNT
-          Column(
+          Row(
             children: [
+              Text(shortId,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(width: 8),
+              _chip(t["status"], color),
+              const Spacer(),
               Text(
                 _formatCurrency(t["amount"]),
                 style: const TextStyle(
                     color: Color(0xFFE4572E),
                     fontWeight: FontWeight.bold),
-              )
+              ),
             ],
-          )
+          ),
+
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              const Icon(Icons.person_outline, size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(t["user"], style: const TextStyle(fontSize: 13)),
+            ],
+          ),
+
+          const SizedBox(height: 3),
+
+          Row(
+            children: [
+              const Icon(Icons.event_outlined, size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  t["event"],
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 3),
+
+          Row(
+            children: [
+              const Icon(Icons.confirmation_number_outlined,
+                  size: 14, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text("Ticket \$shortTicket",
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              const Spacer(),
+              Text(t["time"],
+                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            ],
+          ),
         ],
       ),
     );

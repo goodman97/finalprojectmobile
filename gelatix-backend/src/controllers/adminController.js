@@ -104,8 +104,9 @@ exports.getTransactions = async (req, res) => {
     }
 
     if (search) {
-      query += ` AND (LOWER(tr.id) LIKE LOWER($${params.length + 1}) OR LOWER(u.name) LIKE LOWER($${params.length + 2}))`;
-      params.push(`%${search}%`, `%${search}%`);
+      // Cast UUID ke text dulu sebelum LOWER(), tambah search by event name juga
+      query += ` AND (LOWER(tr.id::text) LIKE LOWER($${params.length + 1}) OR LOWER(u.name) LIKE LOWER($${params.length + 2}) OR LOWER(e.name) LIKE LOWER($${params.length + 3}))`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     query += ` ORDER BY tr.created_at DESC LIMIT 50`;
@@ -121,7 +122,11 @@ exports.getTransactions = async (req, res) => {
         ticketId: row.ticket_id,
         amount: parseFloat(row.amount),
         status: row.status,
-        time: new Date(row.created_at).toLocaleString(),
+        time: (() => {
+          const d = new Date(row.created_at);
+          return d.toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }) + ', ' +
+                 d.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });
+        })(),
       })),
     });
 
