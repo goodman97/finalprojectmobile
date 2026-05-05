@@ -158,14 +158,6 @@ exports.purchaseTicket = async (req, res) => {
       );
     }
 
-    // Tambah 1 spin sebagai reward setelah purchase
-    await client.query(
-      `UPDATE game_users
-       SET total_spins = total_spins + 1
-       WHERE user_id = $1`,
-      [userId]
-    );
-
     await client.query("COMMIT");
 
     res.status(201).json({

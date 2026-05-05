@@ -156,60 +156,75 @@ class _TicketPurchaseState
   void _showCurrencyPicker() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (_) => SafeArea(
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(28),
             ),
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Icon(Icons.currency_exchange, color: Color(0xFFE4572E)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Pilih Mata Uang',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            ..._currencies.entries.map((entry) {
-              final isSelected = _selectedCurrency == entry.key;
-              return ListTile(
-                leading: isSelected
-                    ? const Icon(Icons.check_circle, color: Color(0xFFE4572E))
-                    : const Icon(Icons.radio_button_unchecked,
-                        color: Colors.grey),
-                title: Text(entry.value),
-                onTap: () {
-                  Navigator.pop(context);
-                  _fetchExchangeRate(entry.key);
-                },
-                tileColor: isSelected
-                    ? const Color(0xFFE4572E).withValues(alpha: 0.06)
-                    : null,
-              );
-            }),
-            const SizedBox(height: 16),
-          ],
+
+              const Padding(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Icon(Icons.currency_exchange,
+                        color: Color(0xFFE4572E)),
+                    SizedBox(width: 8),
+                    Text(
+                      "Pilih Mata Uang",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+
+              const Divider(),
+
+              Expanded(
+                child: ListView(
+                  children: _currencies.entries.map((entry) {
+                    final isSelected =
+                        _selectedCurrency == entry.key;
+
+                    return ListTile(
+                      leading: isSelected
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: Color(0xFFE4572E),
+                            )
+                          : const Icon(
+                              Icons.radio_button_unchecked,
+                            ),
+                      title: Text(entry.value),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _fetchExchangeRate(entry.key);
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1095,64 +1110,49 @@ class _TicketPurchaseState
                                 )
                               else
                                 DropdownButtonFormField<String>(
-                                value: selectedTypeId,
-                                dropdownColor: Colors.white,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: Color(0xFF2F3E2F),
-                                ),
-                                style: const TextStyle(
-                                  color: Color(0xFF2F3E2F),
-                                  fontSize: 16,
-                                ),
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: const Color(0xFFF5F1E8),
-                                  contentPadding:
-                                      const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  enabledBorder:
-                                      OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  focusedBorder:
-                                      OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(16),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFE4572E),
-                                    ),
-                                  ),
-                                ),
-                                items: ticketTypes.map((ticket) {
-                                  return DropdownMenuItem<String>(
-                                    value:
-                                        ticket["id"].toString(),
-                                    child: Text(
-                                      "${ticket["name"]} - Rp ${ticket["price"]}",
-                                      style: const TextStyle(
-                                        color: Color(0xFF2F3E2F),
-                                        fontWeight:
-                                            FontWeight.w500,
+                                  value: selectedTypeId,
+                                  isExpanded: true,
+
+                                  items: ticketTypes.map((ticket) {
+                                    return DropdownMenuItem<String>(
+                                      value: ticket["id"].toString(),
+                                      child: Text(
+                                        "${ticket["name"]} - ${_convertAmount(
+                                          int.parse(ticket["price"].toString())
+                                        )}",
+                                        style: const TextStyle(
+                                          color: Color(0xFF2F3E2F),
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedTypeId = value;
-                                  });
-                                },
-                              ),
+                                    );
+                                  }).toList(),
+
+                                  selectedItemBuilder: (context) {
+                                    return ticketTypes.map<Widget>((ticket) {
+                                      return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          "${ticket["name"]} - ${_convertAmount(
+                                            int.parse(ticket["price"].toString())
+                                          )}",
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Color(0xFF2F3E2F),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList();
+                                  },
+
+                                  onChanged: (value) {
+                                    setState(() {
+                                      selectedTypeId = value;
+                                    });
+                                  },
+                                ),
                             ],
                           ),
                         ),
@@ -1330,17 +1330,17 @@ class _TicketPurchaseState
 
                         _summaryRow(
                           "Voucher Discount",
-                          "-Rp $voucherDiscount",
+                          "-${_convertAmount(voucherDiscount)}",
                         ),
 
                         _summaryRow(
                           "Points Used",
-                          "-Rp $finalPointsUsed",
+                          "-${_convertAmount(finalPointsUsed)}",
                         ),
 
                         _summaryRow(
                           "Service Fee",
-                          "Rp 5",
+                          _convertAmount(5),
                         ),
 
                         const Divider(),
