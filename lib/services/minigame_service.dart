@@ -31,7 +31,7 @@ class MiniGameService {
     }
   }
 
-  // SPIN
+  // SPIN (Spin Wheel — Accelerometer)
   static Future<Map<String, dynamic>> spin() async {
     final token = await StorageService.getToken();
 
@@ -52,6 +52,33 @@ class MiniGameService {
       return data;
     } else {
       throw Exception(data["message"] ?? "Spin failed");
+    }
+  }
+
+  // SUBMIT MAZE WIN (Tilt Maze — Gyroscope)
+  static Future<Map<String, dynamic>> submitMazeWin({
+    required int points,
+  }) async {
+    final token = await StorageService.getToken();
+
+    final response = await http.post(
+      Uri.parse("$baseUrl/maze-win"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({"points": points}),
+    );
+
+    print("MAZE WIN STATUS: ${response.statusCode}");
+    print("MAZE WIN BODY: ${response.body}");
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return data;
+    } else {
+      throw Exception(data["message"] ?? "Submit maze win failed");
     }
   }
 }

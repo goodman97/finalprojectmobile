@@ -1,5 +1,7 @@
 import 'dart:math';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:finalproject/services/minigame_service.dart';
 import 'package:finalproject/features/auth/screens/user/navigation.dart';
 
@@ -136,6 +138,15 @@ class _GameScreenState extends State<MiniGame>
   late AnimationController _animCtrl;
   late Animation<double> _animation;
 
+  // ── Accelerometer shake detection ──────────────────────────────────────
+  StreamSubscription<AccelerometerEvent>? _accelSub;
+  static const double _shakeThreshold = 18.0; // m/s² threshold
+  static const int _shakeCooldownMs  = 1500;   // ms antara dua shake
+  DateTime _lastShake = DateTime(0);
+
+  // Shake indicator animation
+  bool _showShakeHint = true;
+
   @override
   void initState() {
     super.initState();
@@ -144,23 +155,57 @@ class _GameScreenState extends State<MiniGame>
       duration: const Duration(seconds: 4),
     );
     loadGameData();
+    _startAccelerometer();
+
+    // Sembunyikan hint shake setelah 4 detik
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _showShakeHint = false);
+    });
   }
 
   @override
   void dispose() {
+    _accelSub?.cancel();
     _animCtrl.dispose();
     super.dispose();
+  }
+
+  // ── Accelerometer ────────────────────────────────────────────────────────
+  void _startAccelerometer() {
+    _accelSub = accelerometerEventStream().listen((event) {
+      // Magnitude of acceleration vector
+      final magnitude = sqrt(
+        event.x * event.x +
+        event.y * event.y +
+        event.z * event.z,
+      );
+
+      // Subtract gravity (~9.8) to get user-applied force
+      final force = (magnitude - 9.8).abs();
+
+      if (force > _shakeThreshold) {
+        final now = DateTime.now();
+        final diff = now.difference(_lastShake).inMilliseconds;
+        if (diff > _shakeCooldownMs) {
+          _lastShake = now;
+          // Trigger spin if eligible
+          if (remainingSpins > 0 && !isSpinning) {
+            spinWheel();
+          }
+        }
+      }
+    });
   }
 
   Future<void> loadGameData() async {
     try {
       final data = await MiniGameService.getGameData();
       setState(() {
-        totalPoints = data["points"] ?? 0;
-        remainingSpins = data["spins"] ?? 0;
-        vouchers = data["vouchers"] ?? [];
-        totalTickets = data["tickets"] ?? 0;
-        isLoading = false;
+        totalPoints    = data["points"]  ?? 0;
+        remainingSpins = data["spins"]   ?? 0;
+        vouchers       = data["vouchers"] ?? [];
+        totalTickets   = data["tickets"] ?? 0;
+        isLoading      = false;
       });
     } catch (e) {
       print("LOAD ERROR: $e");
@@ -168,12 +213,10 @@ class _GameScreenState extends State<MiniGame>
     }
   }
 
-  // Find segment index by type+value from spin result
   int _findSegmentIndex(String type, int value) {
     for (int i = 0; i < kSegments.length; i++) {
       if (kSegments[i].type == type && kSegments[i].value == value) return i;
     }
-    // Closest match by type
     for (int i = 0; i < kSegments.length; i++) {
       if (kSegments[i].type == type) return i;
     }
@@ -183,7 +226,10 @@ class _GameScreenState extends State<MiniGame>
   void spinWheel() async {
     if (remainingSpins <= 0 || isSpinning) return;
 
-    setState(() => isSpinning = true);
+    setState(() {
+      isSpinning = true;
+      _showShakeHint = false;
+    });
 
     try {
       final result = await MiniGameService.spin();
@@ -194,9 +240,7 @@ class _GameScreenState extends State<MiniGame>
       );
 
       final segmentAngle = 2 * pi / kSegments.length;
-      // We want pointer (top) to point at center of target segment
       final targetAngle = -(targetSegment * segmentAngle + segmentAngle / 2);
-      // Add 5 full rotations for visual effect
       final totalAngle = _wheelAngle + (5 * 2 * pi) +
           (targetAngle - _wheelAngle % (2 * pi) + 2 * pi) % (2 * pi);
 
@@ -205,7 +249,6 @@ class _GameScreenState extends State<MiniGame>
       );
 
       _animCtrl.reset();
-
       _animation.addListener(() {
         setState(() => _wheelAngle = _animation.value);
       });
@@ -213,17 +256,13 @@ class _GameScreenState extends State<MiniGame>
       await _animCtrl.forward();
 
       setState(() {
-        _wheelAngle = totalAngle % (2 * pi);
-        isSpinning = false;
-        totalPoints = result["totalPoints"] ?? totalPoints;
-        remainingSpins = result["spinsLeft"] ?? 0;
-        // Reload vouchers if discount was won
-        if (result["type"] == "discount") {
-          loadGameData();
-        }
+        _wheelAngle    = totalAngle % (2 * pi);
+        isSpinning     = false;
+        totalPoints    = result["totalPoints"] ?? totalPoints;
+        remainingSpins = result["spinsLeft"]   ?? 0;
+        if (result["type"] == "discount") loadGameData();
       });
 
-      // Show reward dialog
       _showRewardDialog(result);
     } catch (e) {
       setState(() => isSpinning = false);
@@ -235,8 +274,8 @@ class _GameScreenState extends State<MiniGame>
   }
 
   void _showRewardDialog(Map<String, dynamic> result) {
-    final type = result["type"] ?? "points";
-    final value = result["value"] ?? 0;
+    final type      = result["type"]  ?? "points";
+    final value     = result["value"] ?? 0;
     final isDiscount = type == "discount";
 
     showDialog(
@@ -264,8 +303,7 @@ class _GameScreenState extends State<MiniGame>
               ),
               const SizedBox(height: 16),
               const Text("Congratulations! 🎉",
-                  style: TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text(
                 isDiscount ? "You won $value% Discount!" : "You won $value Points!",
@@ -298,7 +336,6 @@ class _GameScreenState extends State<MiniGame>
     );
   }
 
-  // Show voucher list popup
   void _showVoucherPopup() {
     final unused = vouchers.where((v) => v["used"] == false).toList();
 
@@ -314,7 +351,6 @@ class _GameScreenState extends State<MiniGame>
         ),
         child: Column(
           children: [
-            // Handle
             Container(
               margin: const EdgeInsets.only(top: 12),
               width: 40,
@@ -358,7 +394,7 @@ class _GameScreenState extends State<MiniGame>
                       padding: const EdgeInsets.all(16),
                       itemCount: unused.length,
                       itemBuilder: (ctx, i) {
-                        final v = unused[i];
+                        final v   = unused[i];
                         final pct = v["value"] ?? 0;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -366,11 +402,11 @@ class _GameScreenState extends State<MiniGame>
                             color: const Color(0xFFF5F1E8),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                                color: const Color(0xFFE4572E).withOpacity(0.3)),
+                                color: const Color(0xFFE4572E)
+                                    .withOpacity(0.3)),
                           ),
                           child: Row(
                             children: [
-                              // Left ticket stub
                               Container(
                                 width: 80,
                                 height: 80,
@@ -382,7 +418,8 @@ class _GameScreenState extends State<MiniGame>
                                   ),
                                 ),
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
                                   children: [
                                     Text("$pct%",
                                         style: const TextStyle(
@@ -396,12 +433,10 @@ class _GameScreenState extends State<MiniGame>
                                   ],
                                 ),
                               ),
-                              // Dashed separator
                               CustomPaint(
                                 size: const Size(10, 80),
                                 painter: _DashedLinePainter(),
                               ),
-                              // Right content
                               Expanded(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -427,18 +462,20 @@ class _GameScreenState extends State<MiniGame>
                                         child: ElevatedButton(
                                           onPressed: () {
                                             Navigator.pop(context);
-                                            // Navigate to Market tab
-                                            Navigation.setIndex(context, 3);
+                                            Navigation.setIndex(
+                                                context, 3);
                                           },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
                                                 const Color(0xFFE4572E),
                                             shape: RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(10),
+                                                  BorderRadius.circular(
+                                                      10),
                                             ),
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16),
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal: 16),
                                           ),
                                           child: const Text("Use",
                                               style: TextStyle(
@@ -499,7 +536,8 @@ class _GameScreenState extends State<MiniGame>
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold)),
                                 Text("Earn points & vouchers",
-                                    style: TextStyle(color: Colors.white70)),
+                                    style:
+                                        TextStyle(color: Colors.white70)),
                               ],
                             ),
                             Container(
@@ -517,8 +555,8 @@ class _GameScreenState extends State<MiniGame>
                         Row(
                           children: [
                             Expanded(
-                                child: _statCard("Total Points", "$totalPoints",
-                                    Icons.stars)),
+                                child: _statCard("Total Points",
+                                    "$totalPoints", Icons.stars)),
                             const SizedBox(width: 10),
                             Expanded(
                                 child: _statCard("Spins Left",
@@ -529,6 +567,39 @@ class _GameScreenState extends State<MiniGame>
                     ),
                   ),
 
+                  // ─── SHAKE HINT BANNER ────────────────────────
+                  if (_showShakeHint || remainingSpins > 0 && !isSpinning)
+                    AnimatedOpacity(
+                      opacity: _showShakeHint ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 500),
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE4572E).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: const Color(0xFFE4572E).withOpacity(0.3)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.vibration,
+                                color: Color(0xFFE4572E), size: 18),
+                            SizedBox(width: 8),
+                            Text(
+                              "Kocok HP kamu untuk spin otomatis!",
+                              style: TextStyle(
+                                  color: Color(0xFFE4572E),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                   // ─── PRIZE LEGEND ────────────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -538,7 +609,8 @@ class _GameScreenState extends State<MiniGame>
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 6)
+                          BoxShadow(
+                              color: Colors.black12, blurRadius: 6)
                         ],
                       ),
                       child: Column(
@@ -546,7 +618,8 @@ class _GameScreenState extends State<MiniGame>
                         children: [
                           const Text("🎁 Possible Prizes",
                               style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14)),
                           const SizedBox(height: 12),
                           Wrap(
                             spacing: 8,
@@ -592,7 +665,6 @@ class _GameScreenState extends State<MiniGame>
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Shadow circle
                       Container(
                         width: 280,
                         height: 280,
@@ -607,15 +679,14 @@ class _GameScreenState extends State<MiniGame>
                           ],
                         ),
                       ),
-                      // Wheel
                       SizedBox(
                         width: 260,
                         height: 260,
                         child: CustomPaint(
-                          painter: WheelPainter(rotationAngle: _wheelAngle),
+                          painter:
+                              WheelPainter(rotationAngle: _wheelAngle),
                         ),
                       ),
-                      // Pointer arrow
                       Positioned(
                         top: 0,
                         child: CustomPaint(
@@ -634,27 +705,33 @@ class _GameScreenState extends State<MiniGame>
                     child: SizedBox(
                       width: double.infinity,
                       height: 56,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: (remainingSpins > 0 && !isSpinning)
                             ? spinWheel
                             : null,
+                        icon: Icon(
+                          isSpinning ? Icons.autorenew : Icons.touch_app,
+                          color: remainingSpins <= 0 && !isSpinning
+                              ? Colors.grey
+                              : Colors.white,
+                        ),
+                        label: Text(
+                          isSpinning
+                              ? "Spinning..."
+                              : remainingSpins <= 0
+                                  ? "No Spins Left"
+                                  : "Spin  ($remainingSpins left)  • atau kocok HP",
+                          style: TextStyle(
+                              color: remainingSpins <= 0 && !isSpinning
+                                  ? Colors.grey
+                                  : Colors.white,
+                              fontSize: 15),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE4572E),
                           disabledBackgroundColor: Colors.grey.shade300,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
-                        ),
-                        child: Text(
-                          isSpinning
-                              ? "Spinning..."
-                              : remainingSpins <= 0
-                                  ? "No Spins Left"
-                                  : "Spin the Wheel  ($remainingSpins left)",
-                          style: TextStyle(
-                              color: remainingSpins <= 0 && !isSpinning
-                                  ? Colors.grey
-                                  : Colors.white,
-                              fontSize: 16),
                         ),
                       ),
                     ),
@@ -671,7 +748,8 @@ class _GameScreenState extends State<MiniGame>
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: const [
-                          BoxShadow(color: Colors.black12, blurRadius: 8)
+                          BoxShadow(
+                              color: Colors.black12, blurRadius: 8)
                         ],
                       ),
                       child: Column(
@@ -685,7 +763,6 @@ class _GameScreenState extends State<MiniGame>
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              // Points
                               Expanded(
                                 child: _rewardCard(
                                   icon: Icons.stars,
@@ -696,7 +773,6 @@ class _GameScreenState extends State<MiniGame>
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              // Tickets
                               Expanded(
                                 child: _rewardCard(
                                   icon: Icons.confirmation_num,
@@ -707,7 +783,6 @@ class _GameScreenState extends State<MiniGame>
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              // Vouchers (tappable)
                               Expanded(
                                 child: _rewardCard(
                                   icon: Icons.local_offer,
@@ -720,11 +795,10 @@ class _GameScreenState extends State<MiniGame>
                               ),
                             ],
                           ),
-
-                          // Progress bar
                           const SizedBox(height: 20),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
                             children: [
                               const Text("Next milestone",
                                   style: TextStyle(
@@ -740,7 +814,8 @@ class _GameScreenState extends State<MiniGame>
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: LinearProgressIndicator(
-                              value: (totalPoints / 1000).clamp(0.0, 1.0),
+                              value:
+                                  (totalPoints / 1000).clamp(0.0, 1.0),
                               minHeight: 8,
                               color: const Color(0xFFE4572E),
                               backgroundColor: Colors.grey.shade200,
@@ -766,11 +841,17 @@ class _GameScreenState extends State<MiniGame>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text("How It Works",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                              style:
+                                  TextStyle(fontWeight: FontWeight.bold)),
                           SizedBox(height: 8),
-                          Text("• Spin berdasarkan jumlah tiket yang dibeli"),
-                          Text("• Kumpulkan points untuk reward eksklusif"),
-                          Text("• Dapatkan voucher diskon untuk pembelian tiket"),
+                          Text(
+                              "• Spin berdasarkan jumlah tiket yang dibeli"),
+                          Text(
+                              "• Kocok HP (accelerometer) untuk spin otomatis"),
+                          Text(
+                              "• Kumpulkan points untuk reward eksklusif"),
+                          Text(
+                              "• Dapatkan voucher diskon untuk pembelian tiket"),
                         ],
                       ),
                     ),
@@ -797,10 +878,14 @@ class _GameScreenState extends State<MiniGame>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+              Text(title,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 11)),
               Text(value,
                   style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
             ],
           ),
         ],
@@ -822,7 +907,8 @@ class _GameScreenState extends State<MiniGame>
         clipBehavior: Clip.none,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+            padding:
+                const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
             decoration: BoxDecoration(
               color: color.withOpacity(0.08),
               borderRadius: BorderRadius.circular(16),
@@ -838,14 +924,15 @@ class _GameScreenState extends State<MiniGame>
                         fontSize: 18,
                         fontWeight: FontWeight.bold)),
                 Text(label,
-                    style:
-                        const TextStyle(color: Colors.grey, fontSize: 11)),
-                if (onTap != null)
-                  const SizedBox(height: 4),
+                    style: const TextStyle(
+                        color: Colors.grey, fontSize: 11)),
+                if (onTap != null) const SizedBox(height: 4),
                 if (onTap != null)
                   Text("tap to view",
                       style: TextStyle(
-                          color: color, fontSize: 9, fontWeight: FontWeight.w500)),
+                          color: color,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -896,7 +983,7 @@ class _DashedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const dashHeight = 5.0;
-    const dashSpace = 4.0;
+    const dashSpace  = 4.0;
     final paint = Paint()
       ..color = Colors.grey.shade300
       ..strokeWidth = 1.5;
