@@ -98,10 +98,32 @@ class _NotificationState
                     final notif =
                         notifications[index];
 
+                    // Notifikasi yang sudah dibaca tampil abu-abu
+                    final bool isRead =
+                        notif["is_read"] == true ||
+                        notif["is_read"] == 1 ||
+                        notif["is_read"].toString() == "true";
+
+                    final Color bgColor = isRead
+                        ? const Color(0xFFE8E8E8)
+                        : const Color(0xFFF5F1E8);
+
+                    final Color iconBgColor = isRead
+                        ? Colors.grey
+                        : const Color(0xFFE4572E);
+
+                    final Color titleColor = isRead
+                        ? Colors.grey.shade600
+                        : const Color(0xFF2F3E2F);
+
+                    final Color borderColor = isRead
+                        ? Colors.grey.withOpacity(0.25)
+                        : const Color(0xFFE4572E).withOpacity(0.25);
+
                     return GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        Navigation.setIndex(context,4,);
+                        Navigation.setIndex(context, 4,);
                       },
                       child: Container(
                         margin: const EdgeInsets.only(
@@ -110,11 +132,10 @@ class _NotificationState
                           bottom: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F1E8),
+                          color: bgColor,
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: const Color(0xFFE4572E)
-                                .withOpacity(0.25),
+                            color: borderColor,
                           ),
                         ),
                         child: Row(
@@ -123,9 +144,9 @@ class _NotificationState
                             Container(
                               width: 85,
                               height: 90,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFE4572E),
-                                borderRadius: BorderRadius.only(
+                              decoration: BoxDecoration(
+                                color: iconBgColor,
+                                borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(22),
                                   bottomLeft: Radius.circular(22),
                                 ),
@@ -155,23 +176,41 @@ class _NotificationState
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      notif["title"] ?? "-",
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight:
-                                            FontWeight.bold,
-                                        color: Color(0xFF2F3E2F),
-                                      ),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            notif["title"] ?? "-",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight:
+                                                  FontWeight.bold,
+                                              color: titleColor,
+                                            ),
+                                          ),
+                                        ),
+                                        // dot merah jika belum dibaca
+                                        if (!isRead)
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                      ],
                                     ),
 
                                     const SizedBox(height: 6),
 
                                     Text(
                                       notif["message"] ?? "-",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.grey,
+                                        color: isRead
+                                            ? Colors.grey.shade400
+                                            : Colors.grey,
                                       ),
                                     ),
 
@@ -184,17 +223,18 @@ class _NotificationState
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(
-                                                0xFFE4572E)
-                                            .withOpacity(0.12),
+                                        color: isRead
+                                            ? Colors.grey.withOpacity(0.12)
+                                            : const Color(0xFFE4572E).withOpacity(0.12),
                                         borderRadius:
-                                            BorderRadius.circular(
-                                                20),
+                                            BorderRadius.circular(20),
                                       ),
-                                      child: const Text(
-                                        "Claim Spin",
+                                      child: Text(
+                                        "Lanjut",
                                         style: TextStyle(
-                                          color: Color(0xFFE4572E),
+                                          color: isRead
+                                              ? Colors.grey
+                                              : const Color(0xFFE4572E),
                                           fontSize: 12,
                                           fontWeight:
                                               FontWeight.w600,

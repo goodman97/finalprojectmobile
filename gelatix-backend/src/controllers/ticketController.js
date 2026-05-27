@@ -139,6 +139,24 @@ exports.purchaseTicket = async (req, res) => {
         [userId, ticketId, pricePerUnit + (i === 0 ? serviceFee : 0)]
       );
 
+      await client.query(`
+        INSERT INTO notifications (
+          user_id,
+          title,
+          message,
+          type,
+          reference_type,
+          is_read
+        )
+        VALUES ($1, $2, $3, $4, $5, false)
+      `, [
+        userId,
+        'Pembelian Berhasil',
+        `Tiket untuk event "${ticketType.event_name}" berhasil dibeli`,
+        'ticket_purchase',
+        'ticket'
+      ]);
+
       // Ticket history
       await client.query(
         `INSERT INTO ticket_history (ticket_id, owner_id, transfer_type)
@@ -305,5 +323,34 @@ exports.getMyTickets = async (req, res) => {
   } catch (err) {
     console.error("GET MY TICKETS ERROR:", err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getUnreadNotificationCount = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const result = await pool.query(`
+      SELECT COUNT(*) AS total
+      FROM notifications
+      WHERE user_id = $1
+      AND is_read = false
+    `, [userId]);
+
+    res.json({
+      total: parseInt(result.rows[0].total)
+    });
+
+  } catch (err) {
+
+    console.error(
+      "UNREAD NOTIFICATION ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
   }
 };

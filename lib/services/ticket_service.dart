@@ -66,4 +66,36 @@ class TicketService {
       throw Exception(data["message"] ?? "Purchase failed");
     }
   }
+
+  static Future<int> getUnreadNotificationCount() async {
+    try {
+
+      final token =
+          await StorageService.getToken();
+
+      final r = await http.get(
+        Uri.parse(
+          "${ApiConfig.baseUrl}/api/tickets/notifications/unread-count",
+        ),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (r.statusCode == 200) {
+
+        final data = jsonDecode(r.body);
+
+        return data["total"] ?? 0;
+      }
+
+      return 0;
+
+    } catch (e) {
+
+      print("UNREAD NOTIF ERROR: $e");
+
+      return 0;
+    }
+  }
 }

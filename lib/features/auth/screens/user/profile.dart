@@ -4,6 +4,7 @@ import 'package:finalproject/services/auth_service.dart';
 import 'package:finalproject/features/auth/screens/user/edit_profile.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/notification.dart';
+import 'package:finalproject/services/ticket_service.dart';
 import 'package:finalproject/services/biometric_service.dart';
 import 'package:finalproject/services/storage_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -24,7 +25,7 @@ class _ProfileState extends State<Profile> {
   String? profileImage;
   int totalTickets = 0;
   int totalAttended = 0;
-  int notificationCount = 2;
+  int notificationCount = 0;
   
   bool isLoading = true;
   bool biometricEnabled = false;
@@ -36,6 +37,15 @@ class _ProfileState extends State<Profile> {
     super.initState();
     loadProfile();
     loadLocationPreference();
+    loadNotificationCount();
+  }
+
+  Future<void> loadNotificationCount() async {
+    final count = await TicketService.getUnreadNotificationCount();
+    if (!mounted) return;
+    setState(() {
+      notificationCount = count;
+    });
   }
 
   Future<void> loadProfile() async {
@@ -296,9 +306,11 @@ class _ProfileState extends State<Profile> {
                                 builder: (_) => const NotificationPage(),
                               ),
                             );
-
+                            // Reload count from API after marking as read
+                            final count = await TicketService.getUnreadNotificationCount();
+                            if (!mounted) return;
                             setState(() {
-                              notificationCount = 0;
+                              notificationCount = count;
                             });
                           },
                         ),

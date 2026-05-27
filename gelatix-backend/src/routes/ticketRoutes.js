@@ -11,6 +11,8 @@ router.post("/buy", auth, role(["user", "organizer", "admin"]), ticketController
 
 router.post("/transfer", auth, role(["user", "organizer", "admin"]), ticketController.transferTicket);
 
+router.get("/notifications/unread-count",auth,ticketController.getUnreadNotificationCount);
+
 // Scan hanya untuk organizer (eo) dan admin
 router.post("/scan", auth, role(["organizer", "eo", "admin"]), ticketController.scanTicket);
 

@@ -440,6 +440,8 @@ class _TicketPurchaseState
     }
   }
 
+
+
   void _showTicketDialog({
     required List<String> qrCodes,
     required int discountPercent,
@@ -560,7 +562,9 @@ class _TicketPurchaseState
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context); // close dialog
-                      Navigator.pop(context); // back to previous screen
+                      // Kembalikan true → sinyal bahwa pembelian berhasil
+                      // Halaman pemanggil (event_detail) akan tampilkan banner notif
+                      Navigator.pop(context, true);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE4572E),

@@ -127,6 +127,8 @@ exports.getRecommendations = async (req, res) => {
       .map(id => eventMap[id])
       .filter(Boolean);
 
+    console.log("RECOMMEND SOURCE:", source);
+
     res.json({ source, events: ordered });
 
   } catch (err) {

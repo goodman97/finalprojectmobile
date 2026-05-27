@@ -1,11 +1,159 @@
 import 'package:flutter/material.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/ticket_purchase.dart';
+import 'package:finalproject/services/recomendation_service.dart';
 
-class EventDetail extends StatelessWidget {
+class EventDetail extends StatefulWidget {
   final Map<String, dynamic> event;
 
   const EventDetail({super.key, required this.event});
+
+  @override
+  State<EventDetail> createState() => _EventDetailState();
+}
+
+class _EventDetailState extends State<EventDetail> {
+  Map<String, dynamic> get event => widget.event;
+
+  @override
+  void initState() {
+    super.initState();
+    final eventId = event['id']?.toString() ?? '';
+    if (eventId.isNotEmpty) {
+      RecommendationService.trackView(eventId);
+    }
+  }
+
+  void _showFloatingNotificationBanner({
+    required String eventName,
+  }) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    late AnimationController animCtrl;
+
+    animCtrl = AnimationController(
+      vsync: Navigator.of(context),
+      duration: const Duration(milliseconds: 400),
+    );
+
+    final slideAnim = Tween<Offset>(
+      begin: const Offset(0, -1.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: animCtrl, curve: Curves.easeOutBack));
+
+    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: animCtrl, curve: Curves.easeIn));
+
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 16,
+        right: 16,
+        child: AnimatedBuilder(
+          animation: animCtrl,
+          builder: (_, __) => FadeTransition(
+            opacity: fadeAnim,
+            child: SlideTransition(
+              position: slideAnim,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2F3E2F),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE4572E),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.confirmation_number,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              '🎉 Pembelian Berhasil!',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              eventName.isNotEmpty
+                                  ? 'Tiket "$eventName" sudah tersimpan'
+                                  : 'Tiket kamu sudah tersimpan di akunmu',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.75),
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Tombol tutup
+                      GestureDetector(
+                        onTap: () {
+                          animCtrl.reverse().then((_) {
+                            entry.remove();
+                            animCtrl.dispose();
+                          });
+                        },
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.white.withOpacity(0.6),
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(entry);
+    animCtrl.forward();
+
+    Future.delayed(const Duration(seconds: 4), () {
+      if (entry.mounted) {
+        animCtrl.reverse().then((_) {
+          if (entry.mounted) entry.remove();
+          animCtrl.dispose();
+        });
+      }
+    });
+  }
 
   String formatDate(dynamic date) {
     if (date == null) return "-";
@@ -81,7 +229,6 @@ class EventDetail extends StatelessWidget {
                               ),
                             ),
                     ),
-                    // Gradient overlay
                     Container(
                       height: 320,
                       decoration: const BoxDecoration(
@@ -92,7 +239,6 @@ class EventDetail extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Back button
                     Positioned(
                       top: 40,
                       left: 16,
@@ -115,7 +261,6 @@ class EventDetail extends StatelessWidget {
                   ],
                 ),
 
-                // CONTENT CARD
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                   child: Container(
@@ -130,7 +275,6 @@ class EventDetail extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title & Price
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -175,7 +319,6 @@ class EventDetail extends StatelessWidget {
                         const Divider(),
                         const SizedBox(height: 12),
 
-                        // Info rows
                         _infoRow(Icons.calendar_today, "Date", date),
                         const SizedBox(height: 12),
                         _infoRow(Icons.location_on, "Location", address),
@@ -187,7 +330,6 @@ class EventDetail extends StatelessWidget {
                         const Divider(),
                         const SizedBox(height: 12),
 
-                        // About
                         const Text(
                           "About Event",
                           style: TextStyle(
@@ -210,7 +352,6 @@ class EventDetail extends StatelessWidget {
             ),
           ),
 
-          // GET TICKETS BUTTON (sticky bottom)
           Positioned(
             left: 16,
             right: 16,
@@ -218,13 +359,17 @@ class EventDetail extends StatelessWidget {
             child: SizedBox(
               height: 56,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final purchased = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
                       builder: (_) => TicketPurchase(event: event),
                     ),
                   );
+                  if (purchased == true && mounted) {
+                    final eventName = (event['name'] ?? '').toString();
+                    _showFloatingNotificationBanner(eventName: eventName);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE4572E),

@@ -6,6 +6,7 @@ import 'package:finalproject/features/auth/screens/user/event_detail.dart';
 import 'package:finalproject/features/auth/screens/user/navigation.dart';
 import 'package:finalproject/features/auth/screens/user/notification.dart';
 import 'package:finalproject/features/auth/screens/chat/chat_bot_page.dart';
+import 'package:finalproject/services/ticket_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,16 +23,17 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController searchCtrl = TextEditingController();
   bool isLoading          = true;
   bool isLoadingRecommend = true;
-  int  notificationCount  = 2;
+  int  notificationCount  = 0;
 
   @override
   void initState() {
     super.initState();
     fetchEvents();
     fetchRecommendations();
+    loadNotificationCount();
   }
 
-  // ── Fetch semua event ────────────────────────────────────────────────────
+  // Fetch semua event
   void fetchEvents() async {
     try {
       final data = await EventService.getEvents();
@@ -46,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ── Fetch rekomendasi AI ─────────────────────────────────────────────────
+  // Fetch rekomendasi AI
   void fetchRecommendations() async {
     try {
       final data = await RecommendationService.getRecommendations();
@@ -59,6 +61,17 @@ class _HomeScreenState extends State<HomeScreen> {
       print("ERROR GET RECOMMENDATIONS: $e");
       setState(() => isLoadingRecommend = false);
     }
+  }
+
+  void loadNotificationCount() async {
+    final total =
+        await TicketService.getUnreadNotificationCount();
+
+    if (!mounted) return;
+
+    setState(() {
+      notificationCount = total;
+    });
   }
 
   void searchEvents(String keyword) {
@@ -111,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
 
-            /// ── HEADER ──────────────────────────────────────────────────
+            /// HEADER 
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -162,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 MaterialPageRoute(
                                     builder: (_) => const NotificationPage()),
                               );
-                              setState(() => notificationCount = 0);
+                              loadNotificationCount();
                             },
                           ),
                           if (notificationCount > 0)
@@ -201,13 +214,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // ── SCROLLABLE BODY ──────────────────────────────────────────
+            // SCROLLABLE BODY 
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
 
-                  /// ── NEARBY EVENTS BANNER ──────────────────────────────
+                  /// NEARBY EVENTS BANNER 
                   GestureDetector(
                     onTap: () => Navigation.setIndex(context, 1),
                     child: Container(
@@ -249,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  /// ── AI RECOMMENDATIONS ────────────────────────────────
+                  /// AI RECOMMENDATIONS 
                   if (!isLoadingRecommend && recommendedEvents.isNotEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -323,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  /// ── UPCOMING EVENTS TITLE ─────────────────────────────
+                  /// UPCOMING EVENTS TITLE 
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Align(
@@ -340,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  /// ── EVENT LIST ────────────────────────────────────────
+                  /// EVENT LIST 
                   isLoading
                       ? const Center(
                           child: Padding(
@@ -385,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Horizontal recommendation card ──────────────────────────────────────
+  // Horizontal recommendation card 
   Widget _recommendCard(Map ev) {
     final image = formatImage(ev['event_image']);
     return GestureDetector(

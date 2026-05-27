@@ -47,3 +47,25 @@ exports.getMyEvents = async (req, res) => {
     });
   }
 };
+
+exports.getUnreadNotificationCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await db.query(`
+      SELECT COUNT(*) AS total
+      FROM notifications
+      WHERE user_id = $1
+      AND is_read = false
+    `, [userId]);
+
+    res.json({
+      total: parseInt(result.rows[0].total)
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+};
