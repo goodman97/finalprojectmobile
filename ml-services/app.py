@@ -1,7 +1,7 @@
 """
 Gelatix ML Recommendation Service
 Algoritma: Hybrid (Content-Based + Popularity-Based)
-Port: 5001
+Port: 5000
 """
 
 from flask import Flask, request, jsonify
@@ -15,7 +15,7 @@ from dotenv import dotenv_values
 
 app = Flask(__name__)
 
-# ── DB Connection ──────────────────────────────────────────────────────────────
+# DB Connection
 
 def get_db():
     # Baca .env dari folder backend
@@ -30,7 +30,7 @@ def get_db():
         password = config.get("DB_PASSWORD"),
     )
 
-# ── Helper: ambil data dari DB ────────────────────────────────────────────────
+# Helper: ambil data dari DB
 
 def fetch_all_events(conn):
     """Ambil semua event aktif beserta fitur untuk similarity."""
@@ -56,15 +56,18 @@ def fetch_user_history(conn, user_id):
     """Ambil event yang pernah dibeli user."""
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
         cur.execute("""
-            SELECT DISTINCT t.event_id
+            SELECT
+                t.event_id,
+                COUNT(*) as purchase_count
             FROM tickets t
             JOIN transactions tr ON tr.ticket_id = t.id
             WHERE t.user_id = %s
-              AND tr.status = 'success'
+            AND tr.status = 'success'
+            GROUP BY t.event_id
         """, (user_id,))
         return [row['event_id'] for row in cur.fetchall()]
 
-# ── Content-Based Filtering ───────────────────────────────────────────────────
+# Content-Based Filtering
 
 def build_content_features(events):
     """
@@ -119,7 +122,7 @@ def content_based_recommend(events, purchased_ids, top_n=10):
     top_idx = np.argsort(sims)[::-1][:top_n]
     return [(event_ids[i], float(sims[i])) for i in top_idx if sims[i] > 0]
 
-# ── Popularity-Based (fallback) ───────────────────────────────────────────────
+# Popularity-Based (fallback)
 
 def popularity_recommend(events, purchased_ids, top_n=10):
     """Rekomendasikan event terpopuler yang belum dibeli user."""
@@ -128,8 +131,7 @@ def popularity_recommend(events, purchased_ids, top_n=10):
     sorted_events = sorted(filtered, key=lambda x: int(x['sold']), reverse=True)
     return [(str(e['id']), 0.5) for e in sorted_events[:top_n]]
 
-# ── Endpoint ──────────────────────────────────────────────────────────────────
-
+# Endpoint
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'ok', 'service': 'gelatix-ml'})
@@ -189,4 +191,4 @@ def recommend():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

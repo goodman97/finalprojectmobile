@@ -101,15 +101,8 @@ exports.getRecommendations = async (req, res) => {
         e.status,
         e.latitude,
         e.longitude,
-        COALESCE(e.event_timezone, 'Asia/Jakarta') AS event_timezone,
-        TO_CHAR(
-          e.start_date AT TIME ZONE COALESCE(e.event_timezone, 'Asia/Jakarta'),
-          'YYYY-MM-DD"T"HH24:MI:SSOF'
-        ) AS start_date,
-        TO_CHAR(
-          e.end_date AT TIME ZONE COALESCE(e.event_timezone, 'Asia/Jakarta'),
-          'YYYY-MM-DD"T"HH24:MI:SSOF'
-        ) AS end_date,
+        e.start_date,
+        e.end_date,
         u.name AS organizer_name,
         COUNT(t.id) AS sold
       FROM events e
