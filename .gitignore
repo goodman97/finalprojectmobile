@@ -92,5 +92,5 @@ ios/Flutter/Flutter.podspec
 *.lock
 
 # Database dumps
-*.sql
-*.dump
+# *.sql
+# *.dump
