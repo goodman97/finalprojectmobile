@@ -94,6 +94,7 @@ exports.getRecommendations = async (req, res) => {
       SELECT
         e.id,
         e.name,
+        e.genre,
         e.address,
         e.price,
         e.quota,

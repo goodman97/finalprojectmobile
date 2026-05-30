@@ -112,6 +112,7 @@ exports.getMyEvents = async (req, res) => {
       SELECT
         e.id,
         e.name,
+        e.genre,
         e.address,
         e.date,
         e.price,
@@ -179,6 +180,7 @@ exports.getEoEventDetail = async (req, res) => {
       SELECT
         e.id,
         e.name,
+        e.genre,
         e.address,
         e.date,
         e.price,
@@ -271,9 +273,9 @@ exports.createEvent = async (req, res) => {
     const userTz = await getUserTimezone(organizerId);
 
     // Ambil timezone user 
-
     const {
       name,
+      genre,
       address,
       start_date,
       end_date,
@@ -285,7 +287,7 @@ exports.createEvent = async (req, res) => {
       longitude,
     } = req.body;
 
-    if (!name || !address || !start_date || !price || !quota) {
+    if (!name || !genre || !address || !start_date || !price || !quota) {
       return res.status(400).json({ message: "Semua field wajib diisi" });
     }
 
@@ -302,6 +304,7 @@ exports.createEvent = async (req, res) => {
     const result = await db.query(`
       INSERT INTO events (
         name,
+        genre,
         address,
         date,
         start_date,
@@ -316,14 +319,15 @@ exports.createEvent = async (req, res) => {
         longitude
       )
       VALUES (
-        $1, $2, $3,
-        ($4::timestamp AT TIME ZONE $14),
-        ($5::timestamp AT TIME ZONE $14),
-        $6, $7, $8, $9, $10, $11, $12, $13
+        $1, $2, $3, $4,
+        ($5::timestamp AT TIME ZONE $15),
+        ($6::timestamp AT TIME ZONE $15),
+        $7, $8, $9, $10, $11, $12, $13, $14
       )
       RETURNING *
     `, [
       name,
+      genre,
       address,
       startDateTime,         // $3  — kolom date (legacy)
       startDateTime,         // $4  — start_date, dikonversi ke UTC
@@ -377,6 +381,7 @@ exports.editEvent = async (req, res) => {
 
     const {
       name,
+      genre,
       address,
       start_date,
       end_date,
@@ -406,36 +411,38 @@ exports.editEvent = async (req, res) => {
     // ── UPDATE: konversi waktu lokal → UTC via AT TIME ZONE ─────────────────
     const result = await db.query(`
       UPDATE events SET
-        name        = COALESCE($1, name),
-        address     = COALESCE($2, address),
-        start_date  = COALESCE(($3::timestamp AT TIME ZONE $14), start_date),
-        end_date    = COALESCE(($4::timestamp AT TIME ZONE $14), end_date),
-        price       = COALESCE($5, price),
-        quota       = COALESCE($6, quota),
-        description = COALESCE($7, description),
-        event_image = $8,
-        latitude    = COALESCE($9, latitude),
-        longitude   = COALESCE($10, longitude),
-        status      = COALESCE($11, status)
-      WHERE id = $12
-        AND organizer_id = $13
-      RETURNING *
+      name = COALESCE($1, name),
+      genre = COALESCE($2, genre),
+      address = COALESCE($3, address),
+      start_date = COALESCE(($4::timestamp AT TIME ZONE $15), start_date),
+      end_date = COALESCE(($5::timestamp AT TIME ZONE $15), end_date),
+      price = COALESCE($6, price),
+      quota = COALESCE($7, quota),
+      description = COALESCE($8, description),
+      event_image = $9,
+      latitude = COALESCE($10, latitude),
+      longitude = COALESCE($11, longitude),
+      status = COALESCE($12, status)
+    WHERE id = $13
+      AND organizer_id = $14
+    RETURNING *
     `, [
-      name || null,
-      address || null,
-      startDateTime,         // $3  — null jika tidak diubah
-      endDateTime,           // $4  — null jika tidak diubah
-      price || null,
-      quota || null,
-      description || null,
-      imageName,
-      latitude || null,
-      longitude || null,
-      status || null,
-      id,
-      organizerId,
-      userTz,                // $14 — timezone user
-    ]);
+        name || null,      // $1
+        genre || null,     // $2
+        address || null,   // $3
+        startDateTime,     // $4
+        endDateTime,       // $5
+        price || null,     // $6
+        quota || null,     // $7
+        description || null,// $8
+        imageName,         // $9
+        latitude || null,  // $10
+        longitude || null, // $11
+        status || null,    // $12
+        id,                // $13
+        organizerId,       // $14
+        userTz,            // $15
+      ]);
 
     res.json({
       message: "Event berhasil diupdate",
@@ -457,6 +464,7 @@ exports.getAllEvents = async (req, res) => {
       SELECT
         e.id,
         e.name,
+        e.genre,
         e.address,
         e.date,
         e.price,
@@ -497,6 +505,7 @@ exports.getEventById = async (req, res) => {
       SELECT
         e.id,
         e.name,
+        e.genre,
         e.address,
         e.date,
         e.price,
@@ -638,6 +647,7 @@ exports.adminGetAllEvents = async (req, res) => {
       SELECT
         e.id,
         e.name,
+        e.genre,
         TO_CHAR(e.start_date,'YYYY-MM-DD"T"HH24:MI:SS') AS start_date,
         e.address,
         e.status,

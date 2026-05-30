@@ -39,6 +39,7 @@ def fetch_all_events(conn):
             SELECT
                 e.id,
                 e.name,
+                e.genre,
                 e.address,
                 e.description,
                 e.price,
@@ -53,7 +54,6 @@ def fetch_all_events(conn):
         return cur.fetchall()
 
 def fetch_user_history(conn, user_id):
-    """Ambil event yang pernah dibeli user."""
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
         cur.execute("""
             SELECT
@@ -62,10 +62,16 @@ def fetch_user_history(conn, user_id):
             FROM tickets t
             JOIN transactions tr ON tr.ticket_id = t.id
             WHERE t.user_id = %s
-            AND tr.status = 'success'
+              AND tr.status = 'success'
             GROUP BY t.event_id
         """, (user_id,))
-        return [row['event_id'] for row in cur.fetchall()]
+
+        rows = cur.fetchall()
+
+        return {
+            str(row['event_id']): int(row['purchase_count'])
+            for row in rows
+        }
 
 # Content-Based Filtering
 
@@ -76,23 +82,53 @@ def build_content_features(events):
     """
     features = []
     for e in events:
+        genre_text = (e.get('genre', '') + ' ') * 3
+
         text = " ".join(filter(None, [
             e.get('name', ''),
+            genre_text,
             e.get('description', ''),
-            e.get('address', ''),
         ])).lower()
         features.append(text)
     return features
 
-def content_based_recommend(events, purchased_ids, top_n=10):
+def content_based_recommend(events, purchased_data, top_n=10):
     """
     Hitung cosine similarity antara event yang pernah dibeli
     dengan semua event aktif → rekomendasikan yang paling mirip.
     """
+
+    purchase_map = purchased_data
+    purchased_ids = list(purchase_map.keys())
+
+    genre_counter = {}
+
+    for e in events:
+        eid = str(e['id'])
+
+        if eid in purchase_map:
+            genre = (e.get('genre') or '').lower()
+
+            if genre:
+                genre_counter[genre] = (
+                    genre_counter.get(genre, 0)
+                    + purchase_map[eid]
+                )
+
+    favorite_genre = None
+
+    if genre_counter:
+        favorite_genre = max(
+            genre_counter,
+            key=genre_counter.get
+        )
+
     if not purchased_ids:
         return []
 
     event_ids  = [str(e['id']) for e in events]
+    purchase_map = purchased_data
+    purchased_ids = list(purchase_map.keys())
     features   = build_content_features(events)
 
     tfidf   = TfidfVectorizer(min_df=1, stop_words=None)
@@ -113,6 +149,20 @@ def content_based_recommend(events, purchased_ids, top_n=10):
 
     # Similarity semua event vs profil user
     sims = cosine_similarity(user_vector, tfidf_matrix)[0]
+
+    for i, e in enumerate(events):
+        genre = (e.get('genre') or '').lower()
+
+        if favorite_genre and genre == favorite_genre:
+            sims[i] += 0.5
+
+    # Hitung total kekuatan minat user
+    interest_weight = 1.0
+
+    for eid in purchased_ids:
+        interest_weight += purchase_map.get(eid, 1) * 0.15
+
+    sims = sims * interest_weight
 
     # Exclude event yang sudah dibeli
     for idx in purchased_idx:

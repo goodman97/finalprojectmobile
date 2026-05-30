@@ -72,6 +72,7 @@ class EoEventService {
   // CREATE EVENT
   static Future<Map<String, dynamic>> createEvent({
     required String name,
+    required String genre,
     required String address,
     required String startDate,
     required String startTime,
@@ -90,6 +91,7 @@ class EoEventService {
     final req = http.MultipartRequest("POST", uri)
       ..headers["Authorization"] = "Bearer $token"
       ..fields["name"] = name
+      ..fields["genre"] = genre
       ..fields["address"] = address
       ..fields["start_date"] = startDate
       ..fields["start_time"] = startTime
@@ -150,6 +152,7 @@ class EoEventService {
   static Future<Map<String, dynamic>> editEvent({
     required String id,
     String? name,
+    String? genre,
     String? address,
     String? startDate,
     String? startTime,
@@ -176,6 +179,7 @@ class EoEventService {
     }
 
     addField("name", name);
+    addField("genre", genre);
     addField("address", address);
     addField("start_date", startDate);
     addField("start_time", startTime);

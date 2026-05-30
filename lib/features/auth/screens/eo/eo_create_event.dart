@@ -22,15 +22,16 @@ class EoCreateEvent extends StatefulWidget {
 
 class _EoCreateEventState extends State<EoCreateEvent> {
   final _form = GlobalKey<FormState>();
-  final _name        = TextEditingController();
-  final _address     = TextEditingController();
-  final _startDate   = TextEditingController();
-  final _endDate     = TextEditingController();
-  final _startTime   = TextEditingController();
-  final _price       = TextEditingController();
-  final _quota       = TextEditingController();
+  final _name = TextEditingController();
+  final _address = TextEditingController();
+  final _startDate = TextEditingController();
+  final _endDate = TextEditingController();
+  final _startTime = TextEditingController();
+  final _price = TextEditingController();
+  final _quota = TextEditingController();
   final _description = TextEditingController();
 
+  String? _genre;
   double? _lat, _lng;
   File?   _imageFile;
   String? _existingImage;
@@ -46,14 +47,18 @@ class _EoCreateEventState extends State<EoCreateEvent> {
     super.initState();
     if (_isEdit) {
       final e = widget.editEvent!;
-      _name.text        = e["name"]        ?? "";
-      _address.text     = e["address"]     ?? "";
-      _price.text       = e["price"]?.toString() ?? "";
-      _quota.text       = e["quota"]?.toString()  ?? "";
+      _name.text = e["name"] ?? "";
+      _address.text = e["address"] ?? "";
+      _price.text = e["price"]?.toString() ?? "";
+      _quota.text = e["quota"]?.toString() ?? "";
       _description.text = e["description"] ?? "";
-      _existingImage    = e["event_image"];
+      _genre = e["genre"];
+      _existingImage = e["event_image"];
       _lat = double.tryParse(e["latitude"]?.toString()  ?? "");
       _lng = double.tryParse(e["longitude"]?.toString() ?? "");
+
+      print("EVENT DATA: $e");
+      print("GENRE: ${e["genre"]}");
 
       // ── Fix timezone: parse lalu konversi ke local time device ──────────
       // Backend mengembalikan waktu dengan offset (misal +07:00).
@@ -170,24 +175,45 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                       onPressed: () async {
                         if (selected != null) {
                           try {
+                            print("LAT: ${selected!.latitude}");
+                            print("LNG: ${selected!.longitude}");
+
                             final placemarks = await placemarkFromCoordinates(
-                                selected!.latitude, selected!.longitude);
+                              selected!.latitude,
+                              selected!.longitude,
+                            );
+
+                            print("PLACEMARKS:");
+                            print(placemarks);
                             if (placemarks.isNotEmpty) {
+                              print(placemarks);
                               final p = placemarks.first;
-                              final addr = [
-                                p.street,
-                                p.subLocality,
-                                p.locality,
-                                p.administrativeArea,
-                              ].where((s) => s != null && s.isNotEmpty).join(", ");
+
+                              final parts = <String>[
+                                p.street ?? '',
+                                p.subLocality ?? '',
+                                p.locality ?? '',
+                                p.administrativeArea ?? '',
+                              ];
+
+                              final addr = parts
+                                  .where((e) => e.trim().isNotEmpty)
+                                  .join(', ');
+
                               setState(() {
                                 _lat = selected!.latitude;
                                 _lng = selected!.longitude;
-                                _address.text = addr;
+
+                                _address.text = addr.isNotEmpty
+                                    ? addr
+                                    : "${selected!.latitude.toStringAsFixed(5)}, "
+                                      "${selected!.longitude.toStringAsFixed(5)}";
                               });
                             }
-                          }  catch (e) {
-                            print("REVERSE GEOCODING ERROR: $e");
+                          }  catch (e, s) {
+                            print("REVERSE GEOCODING ERROR:");
+                            print(e);
+                            print(s);
 
                             setState(() {
                               _lat = selected!.latitude;
@@ -268,34 +294,36 @@ class _EoCreateEventState extends State<EoCreateEvent> {
     try {
       if (_isEdit) {
         await EoEventService.editEvent(
-          id:          widget.editEvent!["id"].toString(),
-          name:        _name.text,
-          address:     _address.text,
-          startDate:   _startDate.text,
-          startTime:   _startTime.text,
-          endDate:     _endDate.text,
-          price:       _price.text,
-          quota:       _quota.text,
+          id: widget.editEvent!["id"].toString(),
+          name: _name.text,
+          genre: _genre,
+          address: _address.text,
+          startDate: _startDate.text,
+          startTime: _startTime.text,
+          endDate: _endDate.text,
+          price: _price.text,
+          quota: _quota.text,
           description: _description.text,
-          latitude:    _lat,
-          longitude:   _lng,
-          imageFile:   _imageFile,
-          webImage:    webImage,
+          latitude: _lat,
+          longitude: _lng,
+          imageFile: _imageFile,
+          webImage: webImage,
         );
       } else {
         await EoEventService.createEvent(
-          name:        _name.text,
-          address:     _address.text,
-          startDate:   _startDate.text,
-          startTime:   _startTime.text,
-          endDate:     _endDate.text,
-          price:       _price.text,
-          quota:       _quota.text,
+          name: _name.text,
+          genre: _genre!,
+          address: _address.text,
+          startDate: _startDate.text,
+          startTime: _startTime.text,
+          endDate: _endDate.text,
+          price: _price.text,
+          quota: _quota.text,
           description: _description.text,
-          latitude:    _lat,
-          longitude:   _lng,
-          imageFile:   _imageFile,
-          webImage:    webImage,
+          latitude: _lat,
+          longitude: _lng,
+          imageFile: _imageFile,
+          webImage: webImage,
         );
       }
 
@@ -410,9 +438,71 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                       ),
 
                       const SizedBox(height: 14),
+
                       _label("Event Name"),
                       _textField(_name, "Summer Music Festival",
                           validator: _req),
+
+                      const SizedBox(height: 14),
+
+                      _label("Genre"),
+
+                      DropdownButtonFormField<String>(
+                        value: [
+                          "Pop",
+                          "Rock",
+                          "Jazz",
+                          "EDM",
+                          "K-Pop",
+                          "Hip-Hop",
+                          "Dangdut",
+                          "Indie",
+                          "Metal",
+                          "Classical",
+                        ].contains(_genre)
+                            ? _genre
+                            : null,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        items: const [
+                          "Pop",
+                          "Rock",
+                          "Jazz",
+                          "EDM",
+                          "K-Pop",
+                          "Hip-Hop",
+                          "Dangdut",
+                          "Indie",
+                          "Metal",
+                          "Classical",
+                        ].map((genre) {
+                          return DropdownMenuItem(
+                            value: genre,
+                            child: Text(genre),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _genre = value;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Genre wajib dipilih";
+                          }
+                          return null;
+                        },
+                      ),
 
                       const SizedBox(height: 14),
                       _label("Location"),
