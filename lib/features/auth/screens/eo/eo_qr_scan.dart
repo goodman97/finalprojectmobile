@@ -73,6 +73,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         return Colors.green.withValues(alpha: 0.88);
       case "already_used":
         return Colors.orange.withValues(alpha: 0.88);
+      case "event_ended":
+        return Colors.purple.withValues(alpha: 0.88);
       case "error":
         return Colors.grey.withValues(alpha: 0.88);
       default:
@@ -86,6 +88,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         return Icons.check_circle_outline;
       case "already_used":
         return Icons.warning_amber_rounded;
+      case "event_ended":
+        return Icons.event_busy;
       default:
         return Icons.cancel_outlined;
     }
@@ -97,6 +101,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         return "ACCESS GRANTED";
       case "already_used":
         return "ALREADY USED";
+      case "event_ended":
+        return "EVENT SUDAH BERAKHIR";
       case "error":
         return "SERVER ERROR";
       default:

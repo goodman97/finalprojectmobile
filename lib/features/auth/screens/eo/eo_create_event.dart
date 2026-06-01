@@ -31,7 +31,11 @@ class _EoCreateEventState extends State<EoCreateEvent> {
   final _quota = TextEditingController();
   final _description = TextEditingController();
 
-  String? _genre;
+  final Set<String> _selectedGenres = {};
+  static const List<String> _allGenres = [
+    "Pop", "Rock", "Jazz", "EDM", "K-Pop",
+    "Hip-Hop", "Dangdut", "Indie", "Metal", "Classical",
+  ];
   double? _lat, _lng;
   File?   _imageFile;
   String? _existingImage;
@@ -52,7 +56,10 @@ class _EoCreateEventState extends State<EoCreateEvent> {
       _price.text = e["price"]?.toString() ?? "";
       _quota.text = e["quota"]?.toString() ?? "";
       _description.text = e["description"] ?? "";
-      _genre = e["genre"];
+      final rawGenre = e["genre"]?.toString() ?? "";
+      _selectedGenres.addAll(
+        rawGenre.split(",").map((g) => g.trim()).where((g) => g.isNotEmpty),
+      );
       _existingImage = e["event_image"];
       _lat = double.tryParse(e["latitude"]?.toString()  ?? "");
       _lng = double.tryParse(e["longitude"]?.toString() ?? "");
@@ -110,12 +117,16 @@ class _EoCreateEventState extends State<EoCreateEvent> {
     }
   }
 
-  Future<void> _pickDate(TextEditingController ctrl) async {
+  Future<void> _pickDate(TextEditingController ctrl, {DateTime? minDate}) async {
     final now  = DateTime.now();
+    final DateTime effectiveFirstDate = minDate ?? now;
+    final DateTime effectiveInitialDate = effectiveFirstDate.isAfter(now)
+        ? effectiveFirstDate
+        : now;
     final date = await showDatePicker(
       context: context,
-      initialDate: now,
-      firstDate: now,
+      initialDate: effectiveInitialDate,
+      firstDate: effectiveFirstDate,
       lastDate: DateTime(2030),
       builder: (ctx, child) => Theme(
         data: ThemeData.light().copyWith(
@@ -290,13 +301,21 @@ class _EoCreateEventState extends State<EoCreateEvent> {
       return;
     }
 
+    if (_selectedGenres.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pilih minimal 1 genre")),
+      );
+      return;
+    }
+    final genreString = _selectedGenres.join(",");
+
     setState(() => _isSubmitting = true);
     try {
       if (_isEdit) {
         await EoEventService.editEvent(
           id: widget.editEvent!["id"].toString(),
           name: _name.text,
-          genre: _genre,
+          genre: genreString,
           address: _address.text,
           startDate: _startDate.text,
           startTime: _startTime.text,
@@ -312,7 +331,7 @@ class _EoCreateEventState extends State<EoCreateEvent> {
       } else {
         await EoEventService.createEvent(
           name: _name.text,
-          genre: _genre!,
+          genre: genreString,
           address: _address.text,
           startDate: _startDate.text,
           startTime: _startTime.text,
@@ -447,61 +466,77 @@ class _EoCreateEventState extends State<EoCreateEvent> {
 
                       _label("Genre"),
 
-                      DropdownButtonFormField<String>(
-                        value: [
-                          "Pop",
-                          "Rock",
-                          "Jazz",
-                          "EDM",
-                          "K-Pop",
-                          "Hip-Hop",
-                          "Dangdut",
-                          "Indie",
-                          "Metal",
-                          "Classical",
-                        ].contains(_genre)
-                            ? _genre
-                            : null,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 14,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        items: const [
-                          "Pop",
-                          "Rock",
-                          "Jazz",
-                          "EDM",
-                          "K-Pop",
-                          "Hip-Hop",
-                          "Dangdut",
-                          "Indie",
-                          "Metal",
-                          "Classical",
-                        ].map((genre) {
-                          return DropdownMenuItem(
-                            value: genre,
-                            child: Text(genre),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _genre = value;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Genre wajib dipilih";
-                          }
-                          return null;
-                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: _allGenres.map((genre) {
+                                final selected =
+                                    _selectedGenres.contains(genre);
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (selected) {
+                                        _selectedGenres.remove(genre);
+                                      } else {
+                                        _selectedGenres.add(genre);
+                                      }
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration:
+                                        const Duration(milliseconds: 150),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: selected
+                                          ? const Color(0xFF2F3E2F)
+                                          : const Color(0xFFF5F1E8),
+                                      borderRadius:
+                                          BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: selected
+                                            ? const Color(0xFF2F3E2F)
+                                            : Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      genre,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: selected
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                        color: selected
+                                            ? Colors.white
+                                            : const Color(0xFF2F3E2F),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            if (_selectedGenres.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 6),
+                                child: Text(
+                                  "Pilih minimal 1 genre",
+                                  style: TextStyle(
+                                      color: Colors.red, fontSize: 11),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
 
                       const SizedBox(height: 14),
@@ -551,7 +586,17 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                               children: [
                                 _label("Start Date"),
                                 GestureDetector(
-                                  onTap: () => _pickDate(_startDate),
+                                  onTap: () async {
+                                    await _pickDate(_startDate);
+                                    // Reset end date jika end date < start date yang baru
+                                    if (_endDate.text.isNotEmpty && _startDate.text.isNotEmpty) {
+                                      final start = DateTime.tryParse(_startDate.text);
+                                      final end = DateTime.tryParse(_endDate.text);
+                                      if (start != null && end != null && end.isBefore(start)) {
+                                        setState(() => _endDate.clear());
+                                      }
+                                    }
+                                  },
                                   child: AbsorbPointer(
                                     child: _textField(
                                       _startDate, "dd/mm/yyyy",
@@ -570,7 +615,12 @@ class _EoCreateEventState extends State<EoCreateEvent> {
                               children: [
                                 _label("End Date"),
                                 GestureDetector(
-                                  onTap: () => _pickDate(_endDate),
+                                  onTap: () {
+                                    final DateTime? startParsed = _startDate.text.isNotEmpty
+                                        ? DateTime.tryParse(_startDate.text)
+                                        : null;
+                                    _pickDate(_endDate, minDate: startParsed);
+                                  },
                                   child: AbsorbPointer(
                                     child: _textField(
                                       _endDate, "dd/mm/yyyy",

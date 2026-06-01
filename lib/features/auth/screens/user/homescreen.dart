@@ -381,7 +381,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   title: event['name'] ?? '-',
                                   date: formatDate(event['start_date']),
                                   location: event['address'] ?? '-',
-                                  category: "Event",
+                                  category: (event['genre'] ?? 'Event')
+                                      .toString()
+                                      .split(',')
+                                      .first
+                                      .trim(),
                                   price: "Rp ${event['price'] ?? 0}",
                                   image: formatImage(event['event_image']),
                                 );
@@ -485,6 +489,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 4),
+                  if ((ev['genre'] ?? '').toString().isNotEmpty) ...[
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: (ev['genre'] as String)
+                          .split(',')
+                          .map((g) => g.trim())
+                          .where((g) => g.isNotEmpty)
+                          .take(2)
+                          .map((g) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2F3E2F)
+                                      .withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  g,
+                                  style: const TextStyle(
+                                    color: Color(0xFF2F3E2F),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 3),
@@ -629,6 +663,35 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
+                  if ((event['genre'] ?? '').toString().isNotEmpty) ...[
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: (event['genre'] as String)
+                          .split(',')
+                          .map((g) => g.trim())
+                          .where((g) => g.isNotEmpty)
+                          .map((g) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2F3E2F)
+                                      .withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  g,
+                                  style: const TextStyle(
+                                    color: Color(0xFF2F3E2F),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Row(
                     children: [
                       const Icon(Icons.calendar_today, size: 14),

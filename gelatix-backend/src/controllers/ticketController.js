@@ -250,9 +250,11 @@ exports.scanTicket = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT t.*, u.name, u.email
+      `SELECT t.*, u.name, u.email,
+              e.end_date AS event_end_date, e.name AS event_name
        FROM tickets t
        LEFT JOIN users u ON u.id = t.current_owner_id
+       LEFT JOIN events e ON e.id = t.event_id
        WHERE t.qr_code = $1`,
       [qr]
     );
@@ -262,6 +264,19 @@ exports.scanTicket = async (req, res) => {
     }
 
     const ticket = result.rows[0];
+
+    // Cek apakah event sudah berakhir
+    if (ticket.event_end_date) {
+      const now = new Date();
+      const eventEnd = new Date(ticket.event_end_date);
+      if (now > eventEnd) {
+        return res.json({
+          status: "event_ended",
+          message: `Event "${ticket.event_name}" sudah berakhir`,
+          ticket,
+        });
+      }
+    }
 
     if (ticket.status === "used") {
       return res.json({ status: "already_used", ticket });
@@ -295,6 +310,7 @@ exports.getMyTickets = async (req, res) => {
          tt.name AS ticket_type,
          e.name  AS event_name,
          e.start_date AS event_date,
+         e.end_date AS event_end_date,
          e.address AS location,
          CASE
            WHEN e.event_image IS NULL THEN NULL
@@ -313,10 +329,18 @@ exports.getMyTickets = async (req, res) => {
 
     const upcoming = [];
     const past     = [];
+    const now      = new Date();
 
     result.rows.forEach(item => {
-      if (item.status === "active") upcoming.push(item);
-      else past.push(item);
+      // Tiket masuk past jika: sudah di-scan (used) ATAU event-nya sudah berakhir
+      const eventEnd = item.event_end_date ? new Date(item.event_end_date) : null;
+      const eventPast = eventEnd ? now > eventEnd : false;
+
+      if (item.status === "used" || eventPast) {
+        past.push(item);
+      } else {
+        upcoming.push(item);
+      }
     });
 
     res.json({ upcoming, past });
