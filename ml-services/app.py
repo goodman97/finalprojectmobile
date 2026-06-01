@@ -1,14 +1,15 @@
 """
 Gelatix ML Recommendation Service
 Algoritma: Hybrid (Content-Based + Popularity-Based)
-Port: 5000
+Port: 5001
 """
 
 from flask import Flask, request, jsonify
 import psycopg2
 import psycopg2.extras
-import os
+import traceback
 import numpy as np
+from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import dotenv_values
@@ -18,22 +19,22 @@ app = Flask(__name__)
 # DB Connection
 
 def get_db():
-    # Baca .env dari folder backend
-    env_path = os.path.join(os.path.dirname(__file__), '..', 'gelatix-backend', '.env')
-    config = dotenv_values(env_path)
+    root     = Path(__file__).resolve().parent.parent
+    env_path = root / 'gelatix-backend' / '.env'
+    config   = dotenv_values(str(env_path))
 
     return psycopg2.connect(
         host     = config.get("DB_HOST", "localhost"),
-        port     = config.get("DB_PORT", 5432),
+        port     = int(config.get("DB_PORT", 5432)),
         database = config.get("DB_NAME"),
         user     = config.get("DB_USER"),
-        password = config.get("DB_PASSWORD"),
+        password = config.get("DB_PASS"),
     )
 
 # Helper: ambil data dari DB
 
 def fetch_all_events(conn):
-    """Ambil semua event aktif beserta fitur untuk similarity."""
+    """Ambil semua event aktif yang belum lewat beserta fitur untuk similarity."""
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
         cur.execute("""
             SELECT
@@ -48,6 +49,7 @@ def fetch_all_events(conn):
             LEFT JOIN tickets t
                 ON t.event_id = e.id AND t.status IN ('active','used','resale')
             WHERE e.status = 'active'
+              AND e.end_date >= NOW()
             GROUP BY e.id
             ORDER BY e.start_date ASC
         """)
@@ -61,10 +63,10 @@ def fetch_user_history(conn, user_id):
                 COUNT(*) as purchase_count
             FROM tickets t
             JOIN transactions tr ON tr.ticket_id = t.id
-            WHERE t.user_id = %s
+            WHERE t.user_id = %s::uuid
               AND tr.status = 'success'
             GROUP BY t.event_id
-        """, (user_id,))
+        """, (str(user_id),))
 
         rows = cur.fetchall()
 
@@ -82,7 +84,7 @@ def build_content_features(events):
     """
     features = []
     for e in events:
-        genre_text = (e.get('genre', '') + ' ') * 3
+        genre_text = ((e.get('genre') or '') + ' ') * 3
 
         text = " ".join(filter(None, [
             e.get('name', ''),
@@ -98,7 +100,7 @@ def content_based_recommend(events, purchased_data, top_n=10):
     dengan semua event aktif → rekomendasikan yang paling mirip.
     """
 
-    purchase_map = purchased_data
+    purchase_map  = purchased_data
     purchased_ids = list(purchase_map.keys())
 
     genre_counter = {}
@@ -126,12 +128,12 @@ def content_based_recommend(events, purchased_data, top_n=10):
     if not purchased_ids:
         return []
 
-    event_ids  = [str(e['id']) for e in events]
-    purchase_map = purchased_data
+    event_ids     = [str(e['id']) for e in events]
+    purchase_map  = purchased_data
     purchased_ids = list(purchase_map.keys())
-    features   = build_content_features(events)
+    features      = build_content_features(events)
 
-    tfidf   = TfidfVectorizer(min_df=1, stop_words=None)
+    tfidf        = TfidfVectorizer(min_df=1, stop_words=None)
     tfidf_matrix = tfidf.fit_transform(features)
 
     # Index event yang pernah dibeli
@@ -177,7 +179,7 @@ def content_based_recommend(events, purchased_data, top_n=10):
 def popularity_recommend(events, purchased_ids, top_n=10):
     """Rekomendasikan event terpopuler yang belum dibeli user."""
     purchased_str = [str(p) for p in purchased_ids]
-    filtered = [e for e in events if str(e['id']) not in purchased_str]
+    filtered      = [e for e in events if str(e['id']) not in purchased_str]
     sorted_events = sorted(filtered, key=lambda x: int(x['sold']), reverse=True)
     return [(str(e['id']), 0.5) for e in sorted_events[:top_n]]
 
@@ -190,15 +192,15 @@ def health():
 def recommend():
     try:
         body    = request.get_json()
-        user_id = body.get('user_id')
+        user_id = str(body.get('user_id'))
 
         if not user_id:
             return jsonify({'error': 'user_id required'}), 400
 
         conn = get_db()
 
-        events       = fetch_all_events(conn)
-        purchased    = fetch_user_history(conn, user_id)
+        events    = fetch_all_events(conn)
+        purchased = fetch_user_history(conn, user_id)
 
         conn.close()
 
@@ -212,20 +214,20 @@ def recommend():
 
         # Kalau user belum punya history atau hasil kosong → pakai popularity
         if not results:
-            results  = popularity_recommend(events, purchased, top_n=10)
-            source   = 'popularity'
+            results = popularity_recommend(events, purchased, top_n=10)
+            source  = 'popularity'
 
         # Gabung: content-based score + sedikit boost dari popularity (sold)
-        event_map   = {str(e['id']): e for e in events}
-        max_sold    = max(int(e['sold']) for e in events) or 1
+        event_map = {str(e['id']): e for e in events}
+        max_sold  = max(int(e['sold']) for e in events) or 1
 
         scored = []
         for eid, sim_score in results:
             e = event_map.get(eid)
             if not e:
                 continue
-            pop_score  = int(e['sold']) / max_sold * 0.3   # bobot 30%
-            final_score = sim_score * 0.7 + pop_score       # bobot 70%
+            pop_score   = int(e['sold']) / max_sold * 0.3  # bobot 30%
+            final_score = sim_score * 0.7 + pop_score      # bobot 70%
             scored.append({'id': eid, 'score': round(final_score, 4)})
 
         scored.sort(key=lambda x: x['score'], reverse=True)
@@ -237,8 +239,8 @@ def recommend():
         })
 
     except Exception as e:
-        print(f"RECOMMEND ERROR: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

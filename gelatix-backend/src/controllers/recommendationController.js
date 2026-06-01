@@ -69,11 +69,12 @@ exports.getRecommendations = async (req, res) => {
         FROM events e
         LEFT JOIN tickets t ON t.event_id = e.id AND t.status IN ('active','used','resale')
         WHERE e.status = 'active'
+          AND e.end_date >= NOW()
           AND e.id NOT IN (
             SELECT DISTINCT t2.event_id
             FROM tickets t2
             JOIN transactions tr ON tr.ticket_id = t2.id
-            WHERE t2.user_id = $1 AND tr.status = 'success'
+            WHERE t2.user_id = $1::uuid AND tr.status = 'success'
           )
         GROUP BY e.id
         ORDER BY COUNT(t.id) DESC
@@ -88,7 +89,6 @@ exports.getRecommendations = async (req, res) => {
     }
 
     // Fetch detail event berdasarkan ID yang direkomendasikan
-    // Pertahankan urutan dari ML (ORDER BY ARRAY POSITION)
     const placeholders = eventIds.map((_, i) => `$${i + 1}`).join(',');
     const result = await db.query(`
       SELECT
@@ -111,6 +111,7 @@ exports.getRecommendations = async (req, res) => {
       LEFT JOIN tickets t ON t.event_id = e.id AND t.status IN ('active','used','resale')
       WHERE e.id::text IN (${placeholders})
         AND e.status = 'active'
+        AND e.end_date >= NOW()
       GROUP BY e.id, u.name
     `, eventIds);
 
@@ -127,6 +128,33 @@ exports.getRecommendations = async (req, res) => {
 
   } catch (err) {
     console.error('RECOMMENDATION ERROR:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/recommendations/track-view
+exports.trackView = async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    const { event_id } = req.body;
+
+    if (!event_id) {
+      return res.status(400).json({ message: 'event_id required' });
+    }
+
+    await db.query(`
+      INSERT INTO event_views (user_id, event_id, view_count, last_viewed_at)
+      VALUES ($1::uuid, $2, 1, NOW())
+      ON CONFLICT (user_id, event_id)
+      DO UPDATE SET
+        view_count     = event_views.view_count + 1,
+        last_viewed_at = NOW()
+    `, [userId, event_id]);
+
+    res.json({ message: 'ok' });
+
+  } catch (err) {
+    console.error('TRACK VIEW ERROR:', err);
     res.status(500).json({ message: err.message });
   }
 };

@@ -484,6 +484,7 @@ exports.getAllEvents = async (req, res) => {
       LEFT JOIN users u ON e.organizer_id = u.id
       LEFT JOIN tickets t ON t.event_id = e.id
       WHERE e.status = 'active'
+       AND e.end_date >= NOW()
       GROUP BY e.id, u.name
       ORDER BY e.start_date ASC
     `);
