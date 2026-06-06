@@ -52,7 +52,7 @@ class TicketDetail extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ── Ticket Card ───────────────────────────
+            // Ticket Card 
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -265,7 +265,7 @@ class TicketDetail extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // ── Ownership Journey ─────────────────────
+            // Ownership Journey 
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -418,7 +418,7 @@ class TicketDetail extends StatelessWidget {
   }
 }
 
-// ── Dashed Divider ────────────────────────────────────────────────────────────
+// Dashed Divider 
 class _DashedDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -481,7 +481,7 @@ class _DashedLinePainter extends CustomPainter {
   bool shouldRepaint(_) => false;
 }
 
-// ── Corner Bracket Painter ────────────────────────────────────────────────────
+// Corner Bracket Painter 
 class _CornerBracketPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

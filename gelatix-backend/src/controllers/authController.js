@@ -112,6 +112,9 @@ exports.getProfile = async (req, res) => {
       [userId]
     );
 
+    console.log("USER ID:", userId);
+    console.log("TOTAL TICKETS:", ticketResult.rows[0].total_tickets);
+
     // total events attended
     const attendedResult = await pool.query(
       `

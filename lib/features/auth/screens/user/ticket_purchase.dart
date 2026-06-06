@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/services/storage_service.dart';
 import 'package:finalproject/services/ticket_service.dart';
+import 'package:get/get.dart';
+import 'package:finalproject/controller/profile_controller.dart';
 
 class TicketPurchase extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -384,6 +386,13 @@ class _TicketPurchaseState
         voucherCode: appliedVoucherCode,
         pointsUsed: finalPointsUsed,
       );
+
+      try {
+        final profileCtrl = Get.find<ProfileController>();
+        await profileCtrl.loadProfile();
+      } catch (e) {
+        print("ProfileController tidak ditemukan: $e");
+      }
 
       setState(() {
         isProcessing = false;
