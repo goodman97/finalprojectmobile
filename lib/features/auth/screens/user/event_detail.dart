@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:finalproject/config/api_config.dart';
 import 'package:finalproject/features/auth/screens/user/ticket_purchase.dart';
 import 'package:finalproject/services/recomendation_service.dart';
+import 'package:intl/intl.dart';
 
 class EventDetail extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -14,6 +15,7 @@ class EventDetail extends StatefulWidget {
 
 class _EventDetailState extends State<EventDetail> {
   Map<String, dynamic> get event => widget.event;
+  String selectedTimezone = "WIB";
 
   @override
   void initState() {
@@ -169,6 +171,37 @@ class _EventDetailState extends State<EventDetail> {
     }
   }
 
+  String formatWithTimezone(dynamic date) {
+    if (date == null) return "-";
+
+    final parsed = DateTime.tryParse(date.toString());
+    if (parsed == null) return "-";
+
+    DateTime adjusted = parsed;
+
+    switch (selectedTimezone) {
+      case "WITA":
+        adjusted = parsed.add(const Duration(hours: 1));
+        break;
+
+      case "WIT":
+        adjusted = parsed.add(const Duration(hours: 2));
+        break;
+
+      case "London":
+        adjusted = parsed.subtract(const Duration(hours: 6));
+        break;
+
+      case "WIB":
+      default:
+        adjusted = parsed;
+    }
+
+    return DateFormat(
+      "dd MMM yyyy • HH:mm",
+    ).format(adjusted);
+  }
+
   String formatImage(dynamic image) {
     if (image == null || image.toString().isEmpty) {
       return "";
@@ -200,7 +233,8 @@ class _EventDetailState extends State<EventDetail> {
     final description = (event["description"] ?? "No description available.").toString();
     final organizer = (event["organizer_name"] ?? event["organizer_id"] ?? "Organizer").toString();
     final quota = event["quota"] ?? 0;
-    final date = formatDate(event["start_date"] ?? event["date"]);
+    final startDate = event["start_date"];
+    final endDate = event["end_date"];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1E8),
@@ -316,15 +350,83 @@ class _EventDetailState extends State<EventDetail> {
                         ),
 
                         const SizedBox(height: 20),
+
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5F1E8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedTimezone,
+                              isExpanded: true,
+                              items: const [
+                                DropdownMenuItem(
+                                  value: "WIB",
+                                  child: Text("WIB (UTC+7)"),
+                                ),
+                                DropdownMenuItem(
+                                  value: "WITA",
+                                  child: Text("WITA (UTC+8)"),
+                                ),
+                                DropdownMenuItem(
+                                  value: "WIT",
+                                  child: Text("WIT (UTC+9)"),
+                                ),
+                                DropdownMenuItem(
+                                  value: "London",
+                                  child: Text("London (UTC+1)"),
+                                ),
+                              ],
+                              onChanged: (val) {
+                                if (val == null) return;
+
+                                setState(() {
+                                  selectedTimezone = val;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
                         const Divider(),
                         const SizedBox(height: 12),
 
-                        _infoRow(Icons.calendar_today, "Date", date),
+                        _infoRow(
+                          Icons.event_available,
+                          "Start Date",
+                          formatWithTimezone(startDate),
+                        ),
+
                         const SizedBox(height: 12),
-                        _infoRow(Icons.location_on, "Location", address),
+
+                        _infoRow(
+                          Icons.event_busy,
+                          "End Date",
+                          formatWithTimezone(endDate),
+                        ),
+
                         const SizedBox(height: 12),
-                        _infoRow(Icons.people, "Attendees",
-                            "$quota+ going"),
+
+                        _infoRow(
+                          Icons.location_on,
+                          "Location",
+                          address,
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        _infoRow(
+                          Icons.people,
+                          "Attendees",
+                          "$quota+ going",
+                        ),
 
                         const SizedBox(height: 20),
                         const Divider(),

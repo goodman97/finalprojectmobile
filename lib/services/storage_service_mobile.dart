@@ -15,6 +15,11 @@ class StorageImpl {
     await storage.deleteAll();
   }
 
+  static Future<void> clearSession() async {
+    await storage.delete(key: "token");
+    await storage.delete(key: "role");
+  }
+
   static Future<void> setBiometric(bool value) async {
     await storage.write(key: "biometric", value: value.toString());
   }

@@ -17,6 +17,11 @@ class StorageImpl {
     html.window.localStorage.remove('role');
   }
 
+  static Future<void> clearSession() async {
+    html.window.localStorage.remove('token');
+    html.window.localStorage.remove('role');
+  }
+
   static Future<void> setBiometric(bool value) async {
     html.window.localStorage['biometric'] = value.toString();
   }

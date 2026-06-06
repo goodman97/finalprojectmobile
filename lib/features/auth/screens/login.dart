@@ -68,6 +68,8 @@ class _LoginScreenState extends State<LoginScreen> {
     bool biometricEnabled =
         await StorageService.getBiometric();
 
+    print("BIOMETRIC FROM STORAGE = $biometricEnabled");
+
     if (!biometricEnabled) {
       showMsg(
         "Biometric belum diaktifkan",

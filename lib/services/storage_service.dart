@@ -24,4 +24,7 @@ class StorageService {
 
   static Future<String?> getRole() =>
       StorageImpl.getRole();
+
+  static Future<void> clearSession() =>
+      StorageImpl.clearSession();
 }

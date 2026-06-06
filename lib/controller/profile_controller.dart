@@ -103,17 +103,21 @@ class ProfileController extends GetxController {
 
       await AuthService.updateBiometric(true);
       await StorageService.setBiometric(true);
+      final test = await StorageService.getBiometric();
+      print("BIOMETRIC SAVED = $test");
       biometricEnabled.value = true;
       return 'Biometric enabled';
     } else {
       await AuthService.updateBiometric(false);
       await StorageService.setBiometric(false);
+      final test = await StorageService.getBiometric();
+      print("BIOMETRIC SAVED = $test");
       biometricEnabled.value = false;
       return 'Biometric disabled';
     }
   }
 
   Future<void> logout() async {
-    await StorageService.clear();
+    await StorageService.clearSession();
   }
 }
